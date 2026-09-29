@@ -1,0 +1,38 @@
+{
+  "sample-lossless.mkv": {
+    "width": 1920,
+    "height": 1080,
+    "pixel_identical": true,
+    "bytes": 420550
+  },
+  "odd-lossless.mkv": {
+    "width": 321,
+    "height": 181,
+    "pixel_identical": true,
+    "bytes": 27995
+  },
+  "negative-lossless.mkv": {
+    "width": 321,
+    "height": 181,
+    "pixel_identical": true,
+    "bytes": 27995
+  },
+  "sample-hq.mp4": {
+    "width": 1920,
+    "height": 1080,
+    "bytes": 221116,
+    "psnr_db": 30.16,
+    "ssim": 0.993969
+  },
+  "odd-hq.mp4": {
+    "width": 321,
+    "height": 181,
+    "bytes": 2978
+  },
+  "raw_equivalent_bytes": 186624000,
+  "pause": {
+    "active_seconds": 0.7347106,
+    "video_seconds": 0.8,
+    "paused_content_excluded": true
+  }
+}
