@@ -10,7 +10,7 @@
 
 ## 开始使用
 
-1. 双击 `CatEyeScreenRecorder.exe`，或运行 `猫眼录屏.exe` / `run.bat`。首次启动后可在右上角切换中文 / English。
+1. 双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。首次启动后可在右上角切换中文 / English。
 2. 选择全屏，或点击“自定义区域”拖动鼠标框选矩形。框选时主窗口自动隐藏，松开完成；Esc 或右键取消。
 3. 选择画质、帧率和保存目录，点击“开始录制”。主窗口自动隐藏，右下角显示暂停和停止控制条。
 4. 点击“停止”后，软件完成视频保存，再自动恢复主窗口。点击保存结果可以播放视频。
@@ -52,7 +52,7 @@
 
 支持 Windows 7 / 10 / 11，64 位系统需要 .NET Framework 4.8。内置 FFmpeg 编码组件，通过独立进程运行，不修改系统 PATH，不需要联网录制。
 
-双击 `build-exe.bat` 重新生成带图标和 DPI manifest 的程序。`Framebox.exe` 与 `FreeScreenRecorder.exe` 仍作为兼容文件名保留，`legacy` 下保留升级前的源码和 EXE。根目录的 `screen_recorder.py` 是早期独立实验版，不包含本次的新界面和控制流程，推荐使用 `CatEyeScreenRecorder.exe`。
+双击 `build-exe.bat` 重新生成带图标和 DPI manifest 的 `CatEyeScreenRecorder.exe`。编码组件位于 `tools` 文件夹，升级组件为 `CatEyeUpdater.exe`。项目只保留当前猫眼录屏版本的源代码和测试入口。
 
 ## 验证
 

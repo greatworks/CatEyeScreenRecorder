@@ -1,1 +1,0 @@
-CatEye updater fixture passed

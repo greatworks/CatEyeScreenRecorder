@@ -145,7 +145,7 @@ internal static class UpgradeTests
         {
             g.Clear(Color.FromArgb(242, 244, 247));
             g.FillRectangle(Brushes.DarkSlateBlue, 0, 0, 1920, 100);
-            g.DrawString("帧匣录屏 / TOP · 1920 × 1080 / 清晰文字", font, Brushes.White, 30, 28);
+            g.DrawString("猫眼录屏 / TOP · 1920 × 1080 / 清晰文字", font, Brushes.White, 30, 28);
             for (int row = 0; row < 12; row++) g.DrawString("Screen recording 0123456789 · 屏幕文字清晰度测试 " + row, font, Brushes.Black, 40, 140 + row * 58);
             g.FillRectangle(Brushes.Red, 0, 1000, 120, 80); g.FillRectangle(Brushes.Blue, 1800, 1000, 120, 80);
             frame.Save(Path.Combine(output, "sample-source.png"));

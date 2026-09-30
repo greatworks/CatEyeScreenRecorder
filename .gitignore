@@ -54,4 +54,9 @@ CodeCoverage/
 # NUnit
 *.VisualState.xml
 TestResult.xml
+
+# CatEye local validation and test outputs
+validation/
+release/
+UpgradeTests.exe
 nunit-*.xml
