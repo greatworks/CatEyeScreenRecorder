@@ -43,7 +43,7 @@ namespace FreeWindowsScreenRecorder
     internal static class UpdateChecker
     {
         // The release repository is supplied in update.config beside the executable.
-        internal const string CurrentVersionText = "2.1.1";
+        internal const string CurrentVersionText = "2.2.0";
         private static readonly Version CurrentVersion = new Version(CurrentVersionText);
         private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update.config");
         private static readonly string StatePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FrameboxRecorder", "update-check.txt");

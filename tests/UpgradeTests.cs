@@ -48,31 +48,47 @@ internal static class UpgradeTests
             Check(capture == SystemInformation.VirtualScreen, "Full-screen coverage");
             DarkSelect quality = (DarkSelect)Field(form, "qualityBox");
             DarkSelect fps = (DarkSelect)Field(form, "fpsBox");
+            CardPanel settings = (CardPanel)Field(form, "settingsPanel");
+            Label qualityHint = (Label)Field(form, "qualityHint");
             DarkButton language = (DarkButton)Field(form, "languageButton");
             DarkButton reselect = (DarkButton)Field(form, "selectButton");
-            Check(quality.Height >= quality.Font.Height + 16 && fps.Height >= fps.Font.Height + 16, "High-DPI combo boxes keep a readable height");
+            Check(quality.Height >= quality.Font.Height + 8 && fps.Height >= fps.Font.Height + 8, "High-DPI combo boxes keep a readable height");
+            Check(quality.VisualHeight <= quality.Font.Height + 12 && fps.VisualHeight <= fps.Font.Height + 12, "Combo box frames stay close to the text height");
+            Check(quality.Bottom <= settings.ClientSize.Height && fps.Bottom <= settings.ClientSize.Height && qualityHint.Top >= Math.Max(quality.Top + quality.VisualHeight, fps.Top + fps.VisualHeight), "Quality and frame-rate rows do not overlap");
             Check(quality.Cursor == Cursors.Default && fps.Cursor == Cursors.Default, "System default pointer on clickable controls");
             Check(reselect.Bounds.X > 700 && reselect.Bounds.Y > 250, "Reselect button is beside the resolution preview");
             ReleaseInfo fixture = UpdateChecker.ParseReleaseForTest("{\"tag_name\":\"v9.9.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/cateye/releases/tag/v9.9.0\",\"assets\":[{\"name\":\"猫眼录屏-CatEyeScreenRecorder-v9.9-Windows-x64.zip\",\"browser_download_url\":\"https://github.com/example/cateye/releases/download/v9.9.0/update.zip\",\"digest\":\"sha256:abc\"}]}");
             Check(fixture != null && fixture.Version.Major == 9 && fixture.Version.Minor == 9 && fixture.AssetUrl.EndsWith("update.zip", StringComparison.Ordinal), "GitHub release response parsing");
             uint idleAffinity;
             Check(Native.GetWindowDisplayAffinity(form.Handle, out idleAffinity) && idleAffinity == 0, "Idle main window remains screenshot-capturable");
-            bool startedEnglish = language.Text == "中文";
-            language.PerformClick(); Pump(30);
-            Check(form.Text == (startedEnglish ? "猫眼录屏 · CatEye Screen Recorder" : "CatEye Screen Recorder") && language.Text == (startedEnglish ? "EN" : "中文"), "English UI switch");
-            if (!startedEnglish)
+            MethodInfo showLanguage = typeof(RecorderForm).GetMethod("ShowLanguageMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+            showLanguage.Invoke(form, null); Pump(30);
+            ContextMenuStrip languageMenu = (ContextMenuStrip)Field(form, "languageMenu");
+            Check(languageMenu != null && languageMenu.Items.Count == Localization.Languages.Length, "All language choices are available");
+            for (int languageIndex = 0; languageIndex < Localization.Languages.Length; languageIndex++)
             {
-                using (Bitmap english = new Bitmap(form.Width, form.Height)) { form.DrawToBitmap(english, form.ClientRectangle); english.Save(Path.Combine(output, "english-ui.png")); }
+                languageMenu.Items[languageIndex].PerformClick(); Pump(20);
+                Check(form.Text.Length > 0 && language.Text == Localization.ShortCode, "Language switch " + Localization.Languages[languageIndex].Code);
+                if (Localization.Languages[languageIndex].Language == AppLanguage.TraditionalChinese) Check(form.Text.IndexOf("猫眼录屏", StringComparison.Ordinal) >= 0, "Traditional Chinese keeps the CatEye brand in Chinese");
+                if (Localization.Languages[languageIndex].Language != AppLanguage.SimplifiedChinese && Localization.Languages[languageIndex].Language != AppLanguage.TraditionalChinese) Check(form.Text.IndexOf("CatEye", StringComparison.Ordinal) >= 0, "Non-Chinese languages keep the CatEye brand in English");
+                if (Localization.Languages[languageIndex].Language == AppLanguage.TraditionalChinese)
+                {
+                    Check(quality.Items[0].ToString().IndexOf("HQ MP4", StringComparison.Ordinal) < 0 && fps.Items[1].ToString().IndexOf("Daily", StringComparison.Ordinal) < 0, "Traditional Chinese translates quality and frame-rate options");
+                    using (AboutDialog aboutTraditional = new AboutDialog()) { Label featuresTraditional = (Label)Field(aboutTraditional, "featuresText"); Check(featuresTraditional.Text.IndexOf("No watermark", StringComparison.Ordinal) < 0, "Traditional Chinese translates the about dialog"); }
+                }
+                if (Localization.Languages[languageIndex].Language != AppLanguage.SimplifiedChinese && Localization.Languages[languageIndex].Language != AppLanguage.English) Check(quality.Items[0].ToString() != "HQ MP4 · Compact" && fps.Items[1].ToString() != "30 FPS · Daily", "Localized quality and frame-rate options " + Localization.Languages[languageIndex].Code);
+                showLanguage.Invoke(form, null); Pump(20);
+                languageMenu = (ContextMenuStrip)Field(form, "languageMenu");
             }
-            language.PerformClick(); Pump(30);
-            Check(form.Text == (startedEnglish ? "CatEye Screen Recorder" : "猫眼录屏 · CatEye Screen Recorder") && language.Text == (startedEnglish ? "中文" : "EN"), "Chinese UI switch");
+            Localization.Current = AppLanguage.SimplifiedChinese; MethodInfo applyLanguage = typeof(RecorderForm).GetMethod("ApplyLanguage", BindingFlags.Instance | BindingFlags.NonPublic); applyLanguage.Invoke(form, null); Pump(20);
+            using (Bitmap english = new Bitmap(form.Width, form.Height)) { Localization.Current = AppLanguage.English; applyLanguage.Invoke(form, null); form.DrawToBitmap(english, form.ClientRectangle); english.Save(Path.Combine(output, "english-ui.png")); Localization.Current = AppLanguage.SimplifiedChinese; applyLanguage.Invoke(form, null); }
             using (AboutDialog about = new AboutDialog())
             {
                 Label aboutText = (Label)Field(about, "featuresText");
                 Check(about.Text == Localization.ProductTitle && aboutText.Text.IndexOf(Localization.IsEnglish ? "No watermark" : "无水印", StringComparison.Ordinal) >= 0, "Localized product introduction");
             }
             AppLanguage savedLanguage = Localization.Current;
-            Localization.Current = AppLanguage.Chinese;
+            Localization.Current = AppLanguage.SimplifiedChinese;
             using (AboutDialog aboutZh = new AboutDialog()) using (Bitmap image = new Bitmap(aboutZh.Width, aboutZh.Height)) { aboutZh.Show(form); Pump(40); aboutZh.DrawToBitmap(image, aboutZh.ClientRectangle); image.Save(Path.Combine(output, "about-zh.png")); aboutZh.Close(); }
             Localization.Current = AppLanguage.English;
             using (AboutDialog aboutEn = new AboutDialog()) using (Bitmap image = new Bitmap(aboutEn.Width, aboutEn.Height)) { aboutEn.Show(form); Pump(40); aboutEn.DrawToBitmap(image, aboutEn.ClientRectangle); image.Save(Path.Combine(output, "about-en.png")); aboutEn.Close(); }
@@ -227,7 +243,8 @@ internal static class UpgradeTests
                 ((TextBox)Field(form, "outputBox")).Text = output;
                 ((DarkSelect)Field(form, "qualityBox")).SelectedIndex = 1;
                 Console.WriteLine("Workflow: start recording");
-                var starting = form.StartRecordingAsync(); WaitUntil(delegate { return starting.IsCompleted; }, 10000);
+                ((DarkButton)Field(form, "startButton")).PerformClick();
+                WaitUntil(delegate { return Field(form, "session") != null; }, 10000);
                 Console.WriteLine("Workflow: started");
                 Check(!form.Visible, "Main window hidden throughout recording");
                 RecordingSession active = (RecordingSession)Field(form, "session");

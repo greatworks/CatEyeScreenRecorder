@@ -16,5 +16,5 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Update helper compilation failed.' }
     & $taskCompiler /nologo /target:winexe /platform:x64 /optimize+ /win32icon:CatEye.ico /win32manifest:app.manifest /out:CatEyeScreenRecorder.exe /reference:System.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Xml.dll /reference:System.Runtime.Serialization.dll CatEyeScreenRecorder.cs CaptureEngine.cs Native.cs Theme.cs Localization.cs RecordingWindows.cs UpdateChecker.cs
     if ($LASTEXITCODE -ne 0) { throw 'Recorder compilation failed.' }
-    Write-Output "Built: CatEyeScreenRecorder.exe and CatEyeUpdater.exe (CatEye Screen Recorder 2.1.1)"
+    Write-Output "Built: CatEyeScreenRecorder.exe and CatEyeUpdater.exe (CatEye Screen Recorder 2.2.0)"
 } finally { Pop-Location }

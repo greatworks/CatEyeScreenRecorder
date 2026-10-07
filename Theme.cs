@@ -114,12 +114,13 @@ namespace FreeWindowsScreenRecorder
                 if (SelectedIndexChanged != null) SelectedIndexChanged(this, EventArgs.Empty);
             }
         }
+        internal int VisualHeight { get { return Math.Max(24, Font.Height + 8); } }
         public DarkSelect()
         {
             AccessibleRole = AccessibleRole.ComboBox;
             AutoSize = false;
             // Keep text and the arrow inside the control when a display uses a larger DPI.
-            MinimumSize = new Size(0, 36);
+            MinimumSize = new Size(0, 24);
         }
         protected override void OnFontChanged(EventArgs e)
         {
@@ -137,12 +138,21 @@ namespace FreeWindowsScreenRecorder
             NormalizeDpiBounds();
             EnsureReadableHeight();
         }
+        protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+        {
+            // WinForms may scale a child twice during high-DPI initialization.
+            // Preserve the compact height here; LayoutSettingsPanel still scales
+            // the control's position and width from its logical bounds.
+            int height = Height;
+            base.ScaleControl(factor, specified);
+            if ((specified & BoundsSpecified.Height) != 0 && Height != height) Height = height;
+        }
         internal void NormalizeDpiBounds()
         {
             if (Parent == null || Parent.Width <= 0 || LogicalBounds.Width <= 0) return;
             float scale = Parent.Width / 704f;
             if (scale <= 0f) scale = 1f;
-            int height = Math.Max((int)Math.Ceiling(36f * scale), Font.Height + 16);
+            int height = Math.Max(24, Font.Height + 8);
             Rectangle expected = new Rectangle(
                 (int)Math.Round(LogicalBounds.X * scale),
                 (int)Math.Round(LogicalBounds.Y * scale),
@@ -152,10 +162,14 @@ namespace FreeWindowsScreenRecorder
         }
         private void EnsureReadableHeight()
         {
-            float parentScale = Parent == null || Parent.Width <= 0 ? 1f : Parent.Width / 704f;
-            int scaledMinimum = (int)Math.Ceiling(36f * parentScale);
-            int minimumHeight = Math.Max(36, Math.Max(Font.Height + 16, scaledMinimum));
-            if (Height < minimumHeight) Height = minimumHeight;
+            int minimumHeight = Math.Max(24, Font.Height + 8);
+            if (Height != minimumHeight) Height = minimumHeight;
+        }
+        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
+        {
+            int compactHeight = Math.Max(24, Font.Height + 8);
+            if ((specified & BoundsSpecified.Height) != 0 || height > compactHeight) height = compactHeight;
+            base.SetBoundsCore(x, y, width, height, specified);
         }
         protected override void OnClick(EventArgs e)
         {
@@ -173,7 +187,7 @@ namespace FreeWindowsScreenRecorder
             }
             // Do not dispose here. WinForms is still inside OnItemClicked when Closed fires;
             // disposing at that point causes the ObjectDisposedException reported by users.
-            menu.Show(this, new Point(0, Height));
+            menu.Show(this, new Point(0, Math.Max(24, Font.Height + 8)));
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
@@ -189,10 +203,12 @@ namespace FreeWindowsScreenRecorder
             NormalizeDpiBounds();
             EnsureReadableHeight();
             Graphics g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias;
+            int visualHeight = VisualHeight;
+            using (Brush outer = new SolidBrush(Parent == null ? Theme.Card : Parent.BackColor)) g.FillRectangle(outer, ClientRectangle);
             Color fill = Primary ? Theme.Accent : Selected ? Color.FromArgb(30, 60, 56) : Hovered ? Color.FromArgb(47, 50, 58) : BackColor;
             Color ink = !Enabled ? Theme.Muted : Primary ? Theme.Background : Danger ? Theme.Red : Selected ? Theme.Accent : ForeColor;
-            RectangleF box = new RectangleF(1, 1, Math.Max(1, Width - 2), Math.Max(1, Height - 2));
-            float radius = Math.Min(Math.Max(6, Height / 7f), Math.Min(box.Width, box.Height) / 2f);
+            RectangleF box = new RectangleF(1, 1, Math.Max(1, Width - 2), Math.Max(1, visualHeight - 2));
+            float radius = Math.Min(Math.Max(6, visualHeight / 7f), Math.Min(box.Width, box.Height) / 2f);
             using (GraphicsPath path = Theme.Round(box, radius))
             using (Brush brush = new SolidBrush(fill))
             using (Pen border = new Pen(Selected || Focused ? Theme.Accent : Theme.Border)) { g.FillPath(brush, path); g.DrawPath(border, path); }
@@ -201,9 +217,9 @@ namespace FreeWindowsScreenRecorder
             int arrowCenter = Math.Max(8, Width - arrowInset - 2);
             int half = Math.Max(3, Font.Height / 6);
             using (Pen arrow = new Pen(Theme.Muted, Math.Max(1f, Font.Height / 12f)))
-                g.DrawLines(arrow, new Point[] { new Point(arrowCenter - half, Height / 2 - half / 2), new Point(arrowCenter, Height / 2 + half / 2), new Point(arrowCenter + half, Height / 2 - half / 2) });
+                g.DrawLines(arrow, new Point[] { new Point(arrowCenter - half, visualHeight / 2 - half / 2), new Point(arrowCenter, visualHeight / 2 + half / 2), new Point(arrowCenter + half, visualHeight / 2 - half / 2) });
 
-            Rectangle textBounds = new Rectangle(14, 0, Math.Max(1, Width - arrowInset - 18), Height);
+            Rectangle textBounds = new Rectangle(14, 0, Math.Max(1, Width - arrowInset - 18), visualHeight);
             TextRenderer.DrawText(g, Text, Font, textBounds, ink, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
         protected override void Dispose(bool disposing)

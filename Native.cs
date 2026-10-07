@@ -23,19 +23,42 @@ namespace FreeWindowsScreenRecorder
             finally { if (target != IntPtr.Zero) graphics.ReleaseHdc(target); ReleaseDC(IntPtr.Zero, screen); }
         }
 
-        public static void FlushDesktop() { try { DwmFlush(); } catch (DllNotFoundException) { } }
+        public static void FlushDesktop()
+        {
+            try { DwmFlush(); }
+            catch (DllNotFoundException) { }
+            catch (EntryPointNotFoundException) { }
+            catch (SEHException) { }
+        }
 
         public static bool ExcludeFromCapture(IntPtr handle)
         {
-            VersionInfo version = new VersionInfo(); version.Size = Marshal.SizeOf(typeof(VersionInfo));
-            bool composition;
-            return RtlGetVersion(ref version) == 0 && version.Build >= 19041 &&
-                DwmIsCompositionEnabled(out composition) == 0 && composition && SetWindowDisplayAffinity(handle, 0x11);
+            try
+            {
+                VersionInfo version = new VersionInfo(); version.Size = Marshal.SizeOf(typeof(VersionInfo));
+                bool composition;
+                if (RtlGetVersion(ref version) != 0 || DwmIsCompositionEnabled(out composition) != 0 || !composition) return false;
+                // WDA_EXCLUDEFROMCAPTURE was added in Windows 10 2004. Older
+                // systems can still protect a toolbar with WDA_MONITOR, which
+                // keeps it visible while preventing its contents from entering a capture.
+                uint affinity = version.Build >= 19041 ? 0x11u : 0x1u;
+                if (SetWindowDisplayAffinity(handle, affinity)) return true;
+                return affinity != 0x1u && SetWindowDisplayAffinity(handle, 0x1u);
+            }
+            catch (DllNotFoundException) { return false; }
+            catch (EntryPointNotFoundException) { return false; }
+            catch (SEHException) { return false; }
         }
 
         // Clear WDA_EXCLUDEFROMCAPTURE while the recorder is idle so ordinary screenshot
         // tools can capture the interface. Recording and selection reapply exclusion first.
-        public static bool AllowCapture(IntPtr handle) { return SetWindowDisplayAffinity(handle, 0); }
+        public static bool AllowCapture(IntPtr handle)
+        {
+            try { return SetWindowDisplayAffinity(handle, 0); }
+            catch (DllNotFoundException) { return false; }
+            catch (EntryPointNotFoundException) { return false; }
+            catch (SEHException) { return false; }
+        }
 
         public static void DragWindow(Form form)
         {

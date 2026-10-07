@@ -11,7 +11,7 @@ using System.Xml;
 [assembly: AssemblyTitle("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyProduct("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyDescription("无水印、轻量、完全免费的 Windows 录屏工具")]
-[assembly: AssemblyVersion("2.1.1.0")]
+[assembly: AssemblyVersion("2.2.0.0")]
 
 namespace FreeWindowsScreenRecorder
 {
@@ -31,14 +31,18 @@ namespace FreeWindowsScreenRecorder
         private readonly DarkSelect qualityBox = new DarkSelect(), fpsBox = new DarkSelect();
         private readonly DarkButton fullButton = new DarkButton(), regionButton = new DarkButton(), selectButton = new DarkButton(), startButton = new DarkButton();
         private readonly DarkButton languageButton = new DarkButton();
+        private ContextMenuStrip languageMenu;
         private readonly List<Action> languageBindings = new List<Action>();
         private readonly CapturePreview preview = new CapturePreview();
         private readonly System.Windows.Forms.Timer uiTimer = new System.Windows.Forms.Timer();
         private readonly NotifyIcon tray = new NotifyIcon();
         private readonly ToolStripMenuItem trayPause = new ToolStripMenuItem("暂停录制"), trayStop = new ToolStripMenuItem("停止并保存");
-        private Label statusLabel, qualityHint, latestLabel;
+        private CardPanel settingsPanel;
+        private DarkButton changeFolderButton;
+        private Label saveLabel, statusLabel, qualityTitle, fpsTitle, qualityHint, latestLabel;
         private bool fullScreen = true, busy, saving, closeAfterSave;
         private bool updateCheckStarted;
+        private bool layingOutSettings;
         private Rectangle selectedArea;
         private RecordingSession session;
         private RecordingToolbar toolbar;
@@ -67,18 +71,51 @@ namespace FreeWindowsScreenRecorder
             Shown += async delegate { await CheckForUpdatesAsync(); };
         }
 
-        protected override void OnDpiChanged(DpiChangedEventArgs e)
-        {
-            base.OnDpiChanged(e);
-            if (IsHandleCreated) BeginInvoke(new Action(NormalizeSettingsLayout));
-        }
-
         private void NormalizeSettingsLayout()
         {
             if (IsDisposed || qualityBox.IsDisposed || fpsBox.IsDisposed || qualityBox.Parent == null) return;
-            qualityBox.NormalizeDpiBounds();
-            fpsBox.NormalizeDpiBounds();
+            LayoutSettingsPanel();
             qualityBox.Invalidate(); fpsBox.Invalidate();
+        }
+
+        private void LayoutSettingsPanel()
+        {
+            if (settingsPanel == null || settingsPanel.IsDisposed || settingsPanel.Width <= 0) return;
+            qualityBox.NormalizeDpiBounds(); fpsBox.NormalizeDpiBounds();
+            float scale = settingsPanel.Width / 704f;
+            if (scale <= 0f) scale = 1f;
+            int padding = Math.Max(18, (int)Math.Round(18f * scale));
+            int top = Math.Max(12, (int)Math.Round(13f * scale));
+            int rowTop = Math.Max(36, (int)Math.Round(40f * scale));
+            int rowHeight = Math.Max(24, Math.Max(qualityBox.Font.Height + 8, fpsBox.Font.Height + 8));
+            int hintTop = rowTop + rowHeight + Math.Max(6, (int)Math.Round(8f * scale));
+            int leftWidth = Math.Max(220, (int)Math.Round(250f * scale));
+            int rightX = Math.Max(padding + 150, (int)Math.Round(430f * scale));
+            int rightWidth = Math.Max(170, (int)Math.Round(180f * scale));
+            int titleHeight = Math.Max(23, (int)Math.Round(23f * scale));
+            int hintHeight = Math.Max(20, Math.Max((int)Math.Round(22f * scale), qualityHint == null ? 20 : qualityHint.Font.Height + 4));
+            rowHeight = Math.Max(rowHeight, Math.Max(24, Math.Max(qualityBox.Font.Height + 8, fpsBox.Font.Height + 8)));
+            hintTop = rowTop + rowHeight + Math.Max(6, (int)Math.Round(8f * scale));
+            if (qualityTitle != null) qualityTitle.Bounds = new Rectangle(padding, top, leftWidth, titleHeight);
+            if (fpsTitle != null) fpsTitle.Bounds = new Rectangle(rightX, top, rightWidth, titleHeight);
+            qualityBox.LogicalBounds = new Rectangle(18, 40, 250, 28); qualityBox.Bounds = new Rectangle(padding, rowTop, leftWidth, rowHeight);
+            fpsBox.LogicalBounds = new Rectangle(430, 40, 180, 28); fpsBox.Bounds = new Rectangle(rightX, rowTop, rightWidth, rowHeight);
+            if (qualityHint != null) qualityHint.Bounds = new Rectangle(padding, hintTop, Math.Max(160, rightX - padding - 10), hintHeight);
+            int requiredHeight = Math.Max((int)Math.Round(102f * scale), hintTop + hintHeight + Math.Max(8, (int)Math.Round(8f * scale)));
+            if (settingsPanel.Height != requiredHeight) settingsPanel.Height = requiredHeight;
+            int delta = settingsPanel.Height - Math.Max(118, (int)Math.Round(118f * scale));
+            SetLowerLayout(scale, delta);
+        }
+
+        private void SetLowerLayout(float scale, int delta)
+        {
+            int ySave = (int)Math.Round(493f * scale) + delta;
+            if (saveLabel != null) saveLabel.Bounds = new Rectangle((int)Math.Round(194f * scale), ySave, (int)Math.Round(72f * scale), Math.Max(26, (int)Math.Round(26f * scale)));
+            outputBox.Bounds = new Rectangle((int)Math.Round(264f * scale), (int)Math.Round(491f * scale) + delta, (int)Math.Round(505f * scale), Math.Max(28, outputBox.Font.Height + 8));
+            if (changeFolderButton != null) changeFolderButton.Bounds = new Rectangle((int)Math.Round(784f * scale), (int)Math.Round(484f * scale) + delta, Math.Max(112, (int)Math.Round(112f * scale)), Math.Max(36, (int)Math.Round(36f * scale)));
+            if (statusLabel != null) statusLabel.Bounds = new Rectangle((int)Math.Round(194f * scale), (int)Math.Round(541f * scale) + delta, (int)Math.Round(495f * scale), Math.Max(23, (int)Math.Round(23f * scale)));
+            if (latestLabel != null) latestLabel.Bounds = new Rectangle((int)Math.Round(194f * scale), (int)Math.Round(569f * scale) + delta, (int)Math.Round(500f * scale), Math.Max(32, (int)Math.Round(32f * scale)));
+            startButton.Bounds = new Rectangle((int)Math.Round(710f * scale), (int)Math.Round(545f * scale) + delta, Math.Max(186, (int)Math.Round(186f * scale)), Math.Max(49, (int)Math.Round(49f * scale)));
         }
 
         private void BuildUi()
@@ -87,7 +124,7 @@ namespace FreeWindowsScreenRecorder
             Controls.Add(chrome); chrome.MouseDown += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) Native.DragWindow(this); };
             Label name = LocalLabel(chrome, "猫眼录屏  /  CATEYE", "CatEye Screen Recorder", 22, 13, 330, 22, 9, Theme.Muted, false);
             name.MouseDown += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) Native.DragWindow(this); };
-            languageButton.Text = "EN"; languageButton.Chrome = true; languageButton.TabStop = false; languageButton.BackColor = Theme.Sidebar; languageButton.Bounds = new Rectangle(750, 5, 68, 32); languageButton.Click += delegate { ToggleLanguage(); }; chrome.Controls.Add(languageButton);
+            languageButton.Text = Localization.ShortCode; languageButton.Chrome = true; languageButton.TabStop = false; languageButton.BackColor = Theme.Sidebar; languageButton.Bounds = new Rectangle(750, 5, 68, 32); languageButton.Click += delegate { ShowLanguageMenu(); }; chrome.Controls.Add(languageButton);
             DarkButton minimize = Button(chrome, "—", 828, 5, 38, 32, delegate { WindowState = FormWindowState.Minimized; }); minimize.Chrome = true; minimize.TabStop = false; minimize.BackColor = Theme.Sidebar;
             DarkButton close = Button(chrome, "×", 873, 5, 36, 32, delegate { Close(); }); close.Danger = true; close.Chrome = true; close.TabStop = false; close.BackColor = Theme.Sidebar;
             Panel sidebar = new Panel { Bounds = new Rectangle(0, 44, 164, 576), BackColor = Theme.Sidebar }; Controls.Add(sidebar);
@@ -109,20 +146,21 @@ namespace FreeWindowsScreenRecorder
             BindButton(selectButton, "重新框选", "Select again"); selectButton.Bounds = new Rectangle(768, 300, 120, 38); Controls.Add(selectButton);
             selectButton.Click += async delegate { await SelectRegionAsync(); };
             preview.Bounds = new Rectangle(192, 204, 704, 148); Controls.Add(preview);
-            CardPanel settings = new CardPanel { Bounds = new Rectangle(192, 370, 704, 105) }; Controls.Add(settings);
-            LocalLabel(settings, "画质与体积", "Quality & size", 18, 13, 160, 23, 9, Theme.Muted, false);
-            ConfigureCombo(qualityBox, new Rectangle(18, 40, 290, 32));
+            settingsPanel = new CardPanel { Bounds = new Rectangle(192, 370, 704, 118) }; settingsPanel.Resize += delegate { LayoutSettingsPanel(); }; Controls.Add(settingsPanel);
+            qualityTitle = LocalLabel(settingsPanel, "画质与体积", "Quality & size", 18, 13, 250, 23, 9, Theme.Muted, false);
+            ConfigureCombo(qualityBox, new Rectangle(18, 40, 250, 36));
             SetComboItems(qualityBox, new string[] { "高清省空间 · MP4（推荐）", "原画无损 · MKV" }, new string[] { "HQ MP4 · Compact", "Lossless MKV" });
-            settings.Controls.Add(qualityBox); qualityBox.SelectedIndexChanged += delegate { UpdateQualityHint(); };
-            qualityHint = LocalLabel(settings, "原分辨率 · 高质量压缩", "Native resolution · High-quality compression", 18, 77, 456, 20, 8, Theme.Muted, false);
-            LocalLabel(settings, "帧率", "Frame rate", 470, 13, 180, 23, 9, Theme.Muted, false);
-            ConfigureCombo(fpsBox, new Rectangle(470, 40, 214, 32));
-            SetComboItems(fpsBox, new string[] { "15 FPS · 文档演示", "30 FPS · 日常录制", "60 FPS · 流畅动态" }, new string[] { "15 FPS · Docs", "30 FPS · Daily", "60 FPS · Smooth" }); settings.Controls.Add(fpsBox);
-            LocalLabel(this, "保存到", "Save to", 194, 493, 72, 26, 9, Theme.Muted, false);
+            settingsPanel.Controls.Add(qualityBox); qualityBox.SelectedIndexChanged += delegate { UpdateQualityHint(); };
+            qualityHint = LocalLabel(settingsPanel, "原分辨率 · 高质量压缩", "Native resolution · High-quality compression", 18, 83, 456, 22, 8, Theme.Muted, false);
+            fpsTitle = LocalLabel(settingsPanel, "帧率", "Frame rate", 430, 13, 180, 23, 9, Theme.Muted, false);
+            ConfigureCombo(fpsBox, new Rectangle(430, 40, 180, 36));
+            SetComboItems(fpsBox, new string[] { "15 FPS · 文档演示", "30 FPS · 日常录制", "60 FPS · 流畅动态" }, new string[] { "15 FPS · Docs", "30 FPS · Daily", "60 FPS · Smooth" }); settingsPanel.Controls.Add(fpsBox);
+            LayoutSettingsPanel();
+            saveLabel = LocalLabel(this, "保存到", "Save to", 194, 493, 72, 26, 9, Theme.Muted, false);
             outputBox.Bounds = new Rectangle(264, 491, 505, 28); outputBox.BackColor = Theme.Card; outputBox.ForeColor = Theme.Text;
             outputBox.BorderStyle = BorderStyle.FixedSingle; outputBox.Font = Theme.Font(9, false);
             outputBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CatEyeRecordings"); Controls.Add(outputBox);
-            LocalButton(this, "更改目录", "Change folder", 784, 484, 112, 36, delegate { BrowseOutput(); });
+            changeFolderButton = LocalButton(this, "更改目录", "Change folder", 784, 484, 112, 36, delegate { BrowseOutput(); });
             statusLabel = LocalLabel(this, "就绪 · 主窗口自动隐藏，控制条不入镜", "Ready · Controls stay hidden", 194, 541, 495, 23, 9, Theme.Text, false);
             latestLabel = LocalLabel(this, "Ctrl + Shift + F9 暂停 / 继续    Ctrl + Shift + F10 停止", "F9 pause / resume    F10 stop", 194, 569, 500, 32, 8, Theme.Muted, false);
             latestLabel.AutoEllipsis = true;
@@ -130,7 +168,33 @@ namespace FreeWindowsScreenRecorder
             latestLabel.Click += delegate { if (!string.IsNullOrEmpty(latestFile) && File.Exists(latestFile)) Process.Start(latestFile); };
             BindButton(startButton, "●  开始录制", "●  Start recording"); startButton.Primary = true; startButton.Font = Theme.Font(11, true);
             startButton.Bounds = new Rectangle(710, 545, 186, 49); Controls.Add(startButton);
-            startButton.Click += async delegate { await StartRecordingAsync(); };
+            startButton.Click += StartButton_Click;
+        }
+
+        private async void StartButton_Click(object sender, EventArgs e)
+        {
+            // Keep the click boundary safe even if a platform-specific startup API
+            // throws before the recording session has been created.  Without this
+            // guard an async event exception can leave the form busy with no visible
+            // feedback, making a second click appear to do nothing.
+            try { await StartRecordingAsync(); }
+            catch (Exception ex)
+            {
+                busy = false; saving = false; startButton.Enabled = true;
+                Native.AllowCapture(Handle); Show(); WindowState = FormWindowState.Normal; Activate();
+                statusLabel.Text = Localization.Text("录制启动失败", "Recording could not start"); statusLabel.ForeColor = Theme.Red;
+                try
+                {
+                    string directory = outputBox.Text.Trim();
+                    if (!string.IsNullOrEmpty(directory))
+                    {
+                        directory = Path.GetFullPath(directory); Directory.CreateDirectory(directory);
+                        File.WriteAllText(Path.Combine(directory, "猫眼-启动错误-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".log"), ex.ToString());
+                    }
+                }
+                catch { }
+                MessageBox.Show(this, ex.Message, Localization.Text("猫眼录屏 · 录制启动失败", "CatEye Screen Recorder · Start failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private static DarkButton Button(Control parent, string text, int x, int y, int width, int height, Action action)
@@ -157,14 +221,30 @@ namespace FreeWindowsScreenRecorder
         {
             int selected = combo.SelectedIndex < 0 ? 0 : combo.SelectedIndex;
             combo.Items.Clear();
-            string[] values = Localization.IsEnglish ? english : chinese;
-            for (int i = 0; i < values.Length; i++) combo.Items.Add(values[i]);
-            combo.SelectedIndex = Math.Min(selected, values.Length - 1);
+            for (int i = 0; i < chinese.Length; i++) combo.Items.Add(Localization.Text(chinese[i], english[i]));
+            combo.SelectedIndex = Math.Min(selected, chinese.Length - 1);
         }
-        private void ToggleLanguage()
+        private void ShowLanguageMenu()
         {
-            Localization.Current = Localization.IsEnglish ? AppLanguage.Chinese : AppLanguage.English;
-            ApplyLanguage(); SaveSettings();
+            if (languageMenu == null || languageMenu.IsDisposed)
+            {
+                languageMenu = new ContextMenuStrip { BackColor = Theme.Card, ForeColor = Theme.Text, Font = Theme.Font(9, false), ShowImageMargin = false };
+                languageMenu.Renderer = new ToolStripProfessionalRenderer(new DarkMenuColors());
+            }
+            languageMenu.Items.Clear();
+            for (int i = 0; i < Localization.Languages.Length; i++)
+            {
+                LanguageOption option = Localization.Languages[i];
+                ToolStripMenuItem item = new ToolStripMenuItem(option.NativeName) { Tag = option.Language, Checked = option.Language == Localization.Current, ForeColor = Theme.Text };
+                item.Click += delegate(object sender, EventArgs e)
+                {
+                    ToolStripMenuItem clicked = (ToolStripMenuItem)sender;
+                    Localization.Current = (AppLanguage)clicked.Tag;
+                    ApplyLanguage(); SaveSettings();
+                };
+                languageMenu.Items.Add(item);
+            }
+            languageMenu.Show(languageButton, new Point(0, languageButton.Height));
         }
         private async Task CheckForUpdatesAsync()
         {
@@ -174,7 +254,7 @@ namespace FreeWindowsScreenRecorder
             {
                 ReleaseInfo release = await UpdateChecker.CheckLatestAsync();
                 if (release == null || IsDisposed || busy || session != null) return;
-                string prompt = Localization.Text("发现新版本 " + release.TagName + "，是否下载更新？", "Version " + release.TagName + " is available. Download the update?");
+                string prompt = Localization.Format("发现新版本 {0}，是否下载更新？", "Version {0} is available. Download the update?", release.TagName);
                 if (MessageBox.Show(this, prompt, Localization.Text("猫眼录屏更新", "CatEye Screen Recorder update"), MessageBoxButtons.YesNo, MessageBoxIcon.Information) != DialogResult.Yes) return;
                 startButton.Enabled = false; UseWaitCursor = true;
                 statusLabel.Text = Localization.Text("正在下载更新…", "Downloading update…"); statusLabel.ForeColor = Theme.Accent;
@@ -193,7 +273,7 @@ namespace FreeWindowsScreenRecorder
         private void ApplyLanguage()
         {
             for (int i = 0; i < languageBindings.Count; i++) languageBindings[i]();
-            languageButton.Text = Localization.IsEnglish ? "中文" : "EN";
+            languageButton.Text = Localization.ShortCode;
             Text = Localization.ProductTitle; tray.Text = Localization.ProductName;
             trayPause.Text = Localization.Text("暂停录制", "Pause recording"); trayStop.Text = Localization.Text("停止并保存", "Stop and save");
             SetComboItems(qualityBox, new string[] { "高清省空间 · MP4（推荐）", "原画无损 · MKV" }, new string[] { "HQ MP4 · Compact", "Lossless MKV" });
@@ -258,9 +338,12 @@ namespace FreeWindowsScreenRecorder
             VideoQuality quality = qualityBox.SelectedIndex == 1 ? VideoQuality.Lossless : VideoQuality.HighQuality;
             int fps = new int[] { 15, 30, 60 }[Math.Max(0, fpsBox.SelectedIndex)];
             string path = Path.Combine(directory, "猫眼-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + (quality == VideoQuality.Lossless ? ".mkv" : ".mp4"));
-            busy = true; saving = false; SaveSettings(); startButton.Enabled = false; Native.ExcludeFromCapture(Handle); Hide();
+            busy = true; saving = false;
             try
             {
+                SaveSettings(); startButton.Enabled = false;
+                statusLabel.Text = Localization.Text("正在准备录制…", "Preparing recording…"); statusLabel.ForeColor = Theme.Accent;
+                Native.ExcludeFromCapture(Handle); Hide();
                 await Task.Delay(180); Native.FlushDesktop();
                 toolbar = new RecordingToolbar(); toolbar.PauseRequested += TogglePause; toolbar.StopRequested += StopRecording;
                 bool floating = toolbar.ShowSafely(Screen.PrimaryScreen.WorkingArea);
@@ -339,7 +422,7 @@ namespace FreeWindowsScreenRecorder
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
                 XmlDocument doc = new XmlDocument(); XmlElement root = doc.CreateElement("settings"); doc.AppendChild(root);
-                root.SetAttribute("output", outputBox.Text); root.SetAttribute("quality", qualityBox.SelectedIndex.ToString()); root.SetAttribute("fps", fpsBox.SelectedIndex.ToString()); root.SetAttribute("language", Localization.IsEnglish ? "en" : "zh"); doc.Save(settingsPath);
+                root.SetAttribute("output", outputBox.Text); root.SetAttribute("quality", qualityBox.SelectedIndex.ToString()); root.SetAttribute("fps", fpsBox.SelectedIndex.ToString()); root.SetAttribute("language", Localization.Code); doc.Save(settingsPath);
             }
             catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
@@ -350,7 +433,7 @@ namespace FreeWindowsScreenRecorder
                 if (!File.Exists(settingsPath)) return;
                 XmlDocument doc = new XmlDocument(); doc.XmlResolver = null; doc.Load(settingsPath); XmlElement root = doc.DocumentElement;
                 if (!string.IsNullOrEmpty(root.GetAttribute("output"))) outputBox.Text = root.GetAttribute("output");
-                Localization.Current = root.GetAttribute("language") == "en" ? AppLanguage.English : AppLanguage.Chinese;
+                Localization.SetFromCode(root.GetAttribute("language"));
                 int value; if (int.TryParse(root.GetAttribute("quality"), out value) && value >= 0 && value < 2) qualityBox.SelectedIndex = value;
                 if (int.TryParse(root.GetAttribute("fps"), out value) && value >= 0 && value < 3) fpsBox.SelectedIndex = value;
             }
@@ -362,6 +445,14 @@ namespace FreeWindowsScreenRecorder
             bool pause = Native.SetHotkey(Handle, 1, Keys.F9), stop = Native.SetHotkey(Handle, 2, Keys.F10);
             if ((!pause || !stop) && latestLabel != null) latestLabel.Text = Localization.Text("快捷键被占用时，请使用悬浮条或托盘控制", "If a shortcut is busy, use the floating bar or tray controls.");
         }
+        protected override void OnLayout(LayoutEventArgs e)
+        {
+            base.OnLayout(e);
+            if (layingOutSettings || settingsPanel == null || settingsPanel.IsDisposed || settingsPanel.Width <= 0) return;
+            layingOutSettings = true;
+            try { LayoutSettingsPanel(); }
+            finally { layingOutSettings = false; }
+        }
         protected override void OnHandleDestroyed(EventArgs e)
         {
             Native.ClearHotkey(Handle, 1); Native.ClearHotkey(Handle, 2); base.OnHandleDestroyed(e);
@@ -369,6 +460,10 @@ namespace FreeWindowsScreenRecorder
         protected override void WndProc(ref Message message)
         {
             if (message.Msg == 0x0312) { if (message.WParam.ToInt32() == 1) TogglePause(); else if (message.WParam.ToInt32() == 2) StopRecording(); }
+            if (message.Msg == 0x02E0 && IsHandleCreated)
+            {
+                try { BeginInvoke(new Action(NormalizeSettingsLayout)); } catch (InvalidOperationException) { }
+            }
             base.WndProc(ref message);
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -379,7 +474,7 @@ namespace FreeWindowsScreenRecorder
         }
         protected override void Dispose(bool disposing)
         {
-            if (disposing) { uiTimer.Dispose(); tray.Dispose(); if (toolbar != null) toolbar.Dispose(); }
+            if (disposing) { uiTimer.Dispose(); tray.Dispose(); if (languageMenu != null) languageMenu.Dispose(); if (toolbar != null) toolbar.Dispose(); }
             base.Dispose(disposing);
         }
         protected override void OnPaint(PaintEventArgs e)

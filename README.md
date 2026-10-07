@@ -1,4 +1,4 @@
-# 猫眼录屏 · CatEye Screen Recorder 2.1.1
+# 猫眼录屏 · CatEye Screen Recorder 2.2.0
 
 一款无水印、轻量、完全免费的 Windows 录屏工具，打开就能录。
 
@@ -10,7 +10,7 @@
 
 ## 开始使用
 
-1. 双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。首次启动后可在右上角切换中文 / English。
+1. 双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。点击右上角语言按钮可选择简体中文、繁體中文、English、日本語、한국어、Deutsch、Français、Español、Português 或 Русский。
 2. 选择全屏，或点击“自定义区域”拖动鼠标框选矩形。框选时主窗口自动隐藏，松开完成；Esc 或右键取消。
 3. 选择画质、帧率和保存目录，点击“开始录制”。主窗口自动隐藏，右下角显示暂停和停止控制条。
 4. 点击“停止”后，软件完成视频保存，再自动恢复主窗口。点击保存结果可以播放视频。
@@ -19,7 +19,7 @@
 
 ## 自动更新
 
-软件支持通过 GitHub Releases 检查更新。发布包中的 `update.config` 默认留空，因此没有配置仓库时不会联网检查。准备发布时，将其中的 `repository=` 改为公开仓库的 `OWNER/REPOSITORY`，并在该仓库创建带有 `CatEyeScreenRecorder` ZIP 资产的 Release，例如 `猫眼录屏-CatEyeScreenRecorder-v2.2-Windows-x64.zip`。程序启动后每天最多检查一次；发现更高版本会提示，确认后下载并校验 Release 资产，再由独立的 `CatEyeUpdater.exe` 等待主程序退出、替换文件并重启。
+软件支持通过 GitHub Releases 检查更新。发布包中的 `update.config` 默认指向 `greatworks/CatEyeScreenRecorder`；如需关闭检查，可将 `repository=` 留空。该仓库需要创建带有 `CatEyeScreenRecorder` ZIP 资产的 Release，例如 `猫眼录屏-CatEyeScreenRecorder-v2.2-Windows-x64.zip`。程序启动后每天最多检查一次；发现更高版本会提示，确认后下载并校验 Release 资产，再由独立的 `CatEyeUpdater.exe` 等待主程序退出、替换文件并重启。
 
 更新包应通过 HTTPS 发布，建议同时保留 GitHub Release 的 SHA-256 摘要和版本说明。更新程序不会上传任何数据，也不会修改录制目录或用户设置；网络不可用时继续正常录制。
 
@@ -50,7 +50,7 @@
 
 ## 系统与打包
 
-支持 Windows 7 / 10 / 11，64 位系统需要 .NET Framework 4.8。内置 FFmpeg 编码组件，通过独立进程运行，不修改系统 PATH，不需要联网录制。
+兼容目标为 Windows 7 SP1 / 8 / 8.1 / 10 / 11，64 位系统需要 .NET Framework 4.5.2 或更高版本。当前包已在 Windows 10 x64 完成回归；Windows 7 的最终验收仍需对应的实体机或虚拟机。内置 FFmpeg 编码组件，通过独立进程运行，不修改系统 PATH，不需要联网录制。Windows 7 使用旧版系统时，若系统缺少 Universal CRT，请先安装对应的 Microsoft 更新包。
 
 双击 `build-exe.bat` 重新生成带图标和 DPI manifest 的 `CatEyeScreenRecorder.exe`。编码组件位于 `tools` 文件夹，升级组件为 `CatEyeUpdater.exe`。项目只保留当前猫眼录屏版本的源代码和测试入口。
 

@@ -2,11 +2,11 @@
 
 CatEye Screen Recorder invokes FFmpeg as a separate executable for video encoding. No FFmpeg code is linked into the recorder executable.
 
-- Component: FFmpeg 9.0.1 essentials Windows build, including libx264.
+- Component: FFmpeg 6.1.1 essentials Windows build, including libx264 and libx264rgb.
 - Binary distributor: Gyan Doshi, https://www.gyan.dev/ffmpeg/builds/
-- Download: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip
-- Downloaded and verified: 2026-09-09.
-- Archive SHA-256: `FEC81AE03971D9DD4BE3EBE02E263BD2EC1D789483F931BDBA5F5715E65DA2E9`.
+- Download: https://github.com/GyanD/codexffmpeg/releases/download/6.1.1/ffmpeg-6.1.1-essentials_build.zip
+- Downloaded and verified: 2026-09-30.
+- Archive SHA-256: `742E32FC9F92681F9F254B925E1B613FDD8074BA40749D4879AEFDB009B94CC5`.
 - Build configuration includes `--enable-gpl --enable-version3`; the build's accompanying license is retained as `tools/LICENSE`.
 - Upstream project and source: https://ffmpeg.org/ and https://github.com/FFmpeg/FFmpeg
 - Release source information and build details: https://www.gyan.dev/ffmpeg/builds/#release-builds

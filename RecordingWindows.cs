@@ -105,14 +105,22 @@ namespace FreeWindowsScreenRecorder
         }
         protected override void OnHandleCreated(EventArgs e)
         {
-            base.OnHandleCreated(e); CaptureExcluded = Native.ExcludeFromCapture(Handle);
+            // Some Windows builds reject display-affinity calls while a top-level
+            // window is still hidden.  Apply the affinity after Show() instead.
+            base.OnHandleCreated(e); CaptureExcluded = false;
         }
         internal bool ShowSafely(Rectangle workingArea)
         {
             IntPtr handle = Handle;
-            if (!CaptureExcluded) return false;
             Location = new Point(workingArea.Right - Width - 18, workingArea.Bottom - Height - 18);
-            Show(); Native.FlushDesktop(); return true;
+            Show(); BringToFront(); Native.FlushDesktop();
+            CaptureExcluded = Native.ExcludeFromCapture(handle);
+            if (!CaptureExcluded)
+            {
+                Hide();
+                return false;
+            }
+            Native.FlushDesktop(); return true;
         }
         internal void UpdateState(TimeSpan elapsed, bool paused, bool saving)
         {
