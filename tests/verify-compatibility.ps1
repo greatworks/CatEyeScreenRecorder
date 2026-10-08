@@ -19,6 +19,9 @@ try {
     if ($updaterConfig -notmatch 'Version=v4\.5\.2') { throw 'The updater .NET Framework 4.5.2 startup target is missing.' }
     if ($source -match 'OnDpiChanged|DpiChangedEventArgs') { throw 'The source still requires the .NET 4.7-only DPI override.' }
     if ($source -notmatch 'EntryPointNotFoundException' -or $source -notmatch 'SEHException') { throw 'Win7 native API fallback guards are missing.' }
+    if (-not (Test-Path -LiteralPath README.en.md)) { throw 'English README is missing.' }
+    $readme = Get-Content -Raw README.md
+    if ($readme -notmatch 'Windows 11 24H2 / 25H2 / 26H1 / 26H2') { throw 'README compatibility description is stale.' }
     if (-not (Test-Path -LiteralPath tools\ffmpeg.exe)) { throw 'tools\ffmpeg.exe is missing.' }
     $ffmpegVersion = (& (Join-Path $root 'tools\ffmpeg.exe') -version | Select-Object -First 1)
     if ($ffmpegVersion -notmatch 'ffmpeg version 6\.1\.1') { throw "Unexpected FFmpeg build: $ffmpegVersion" }
@@ -29,7 +32,7 @@ try {
     Start-Sleep -Milliseconds 900
     if ($process.HasExited) { throw "Recorder exited during startup smoke test with code $($process.ExitCode)." }
     Stop-Process -Id $process.Id -Force
-    Write-Output "PASS: manifest advertises Windows 7/8/8.1/10+, .NET 4.5.2 startup, native fallback guards, FFmpeg 6.1.1, and startup smoke."
+    Write-Output "PASS: manifest advertises Windows 7 SP1/8/8.1/10/11 compatibility, README language files, .NET 4.5.2 startup, native fallback guards, FFmpeg 6.1.1, and startup smoke."
     Write-Output "Host OS: $([Environment]::OSVersion.VersionString)"
-    Write-Output 'NOTE: Win7 runtime behavior still requires a physical or virtual Windows 7 SP1 test machine.'
+    Write-Output 'NOTE: Windows 7/8/8.1 and each Windows 11 branch still require matching physical or virtual machines for final runtime acceptance.'
 } finally { Pop-Location }

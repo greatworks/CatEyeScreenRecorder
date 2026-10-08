@@ -1,10 +1,12 @@
 # 猫眼录屏 · CatEye Screen Recorder 2.2.0
 
+[English README](README.en.md)
+
 一款无水印、轻量、完全免费的 Windows 录屏工具，打开就能录。
 
 猫眼录屏（CatEye Screen Recorder）面向 Windows 用户，主打无水印、轻量不占资源、操作极简。无需复杂设置，打开软件即可开始录制，适合学生录网课、游戏玩家录精彩片段、职场人录会议和教程等日常场景。软件完全免费，无隐藏收费。
 
-核心特点：无水印；安装包小、运行时占用低；所有功能免费；打开即可录制；支持 Windows 7 / 10 / 11。
+核心特点：无水印；安装包小、运行时占用低；所有功能免费；打开即可录制；支持 Windows 7 SP1 / 8 / 8.1 / 10 / 11。
 
 适用场景：网课录制、游戏片段录制、会议记录、教程制作、日常屏幕记录。
 
@@ -50,7 +52,7 @@
 
 ## 系统与打包
 
-兼容目标为 Windows 7 SP1 / 8 / 8.1 / 10 / 11，64 位系统需要 .NET Framework 4.5.2 或更高版本。当前包已在 Windows 10 x64 完成回归；Windows 7 的最终验收仍需对应的实体机或虚拟机。内置 FFmpeg 编码组件，通过独立进程运行，不修改系统 PATH，不需要联网录制。Windows 7 使用旧版系统时，若系统缺少 Universal CRT，请先安装对应的 Microsoft 更新包。
+兼容目标为 Windows 7 SP1、Windows 8、Windows 8.1、Windows 10 22H2，以及 Windows 11 24H2 / 25H2 / 26H1 / 26H2 和后续兼容版本，64 位系统需要 .NET Framework 4.5.2 或更高版本。当前发布包已在 Windows 10 x64 完成回归；Windows 7、8、8.1 及 Windows 11 各版本的最终运行验收仍需对应实体机或虚拟机。Windows 7、Windows 8、Windows 8.1 和 Windows 10 22H2 已不在微软常规支持期内，生产环境建议使用当前受支持的 Windows 11 版本。本说明按 2026-10-07 的微软发布信息更新，Windows 11 26H2 为当前最新正式版本。内置 FFmpeg 编码组件，通过独立进程运行，不修改系统 PATH，不需要联网录制。Windows 7 使用旧版系统时，若系统缺少 Universal CRT，请先安装对应的 Microsoft 更新包。
 
 双击 `build-exe.bat` 重新生成带图标和 DPI manifest 的 `CatEyeScreenRecorder.exe`。编码组件位于 `tools` 文件夹，升级组件为 `CatEyeUpdater.exe`。项目只保留当前猫眼录屏版本的源代码和测试入口。
 
