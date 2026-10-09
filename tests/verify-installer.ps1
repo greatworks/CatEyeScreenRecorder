@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $taskExe = Join-Path $taskRoot 'release\CatEye-InstallTest.exe'
+$taskVersionSource = Get-Content -Raw -LiteralPath (Join-Path $taskRoot 'UpdateChecker.cs')
+if ($taskVersionSource -notmatch 'CurrentVersionText\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"') { throw 'Version constant missing.' }
+$taskExpectedVersion = $Matches[1]
 $taskResults = Join-Path $taskRoot ('validation\installer-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 $taskInstallDir = Join-Path $taskResults 'installed 猫眼'
 $taskKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CatEyeScreenRecorder.InstallTest_is1'
@@ -20,7 +23,7 @@ try {
         $taskProcess = Start-Process -FilePath $taskExe -WindowStyle Hidden -PassThru -Wait -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',('/DIR="'+$taskInstallDir+'"'),'/LANG=english','/TASKS=desktopicon',('/LOG="'+$taskLog+'"'))
         if ($taskProcess.ExitCode -ne 0) { throw "$taskPhase failed: $($taskProcess.ExitCode). See $taskLog" }
         $taskEntry = Get-ItemProperty -LiteralPath $taskKey
-        if ($taskEntry.DisplayVersion -ne '2.3.0' -or $taskEntry.InstallLocation.TrimEnd('\') -ne $taskInstallDir) { throw 'App registration incorrect.' }
+        if ($taskEntry.DisplayVersion -ne $taskExpectedVersion -or $taskEntry.InstallLocation.TrimEnd('\') -ne $taskInstallDir) { throw 'App registration incorrect.' }
         if (-not (Test-Path -LiteralPath $taskStartLink) -or -not (Test-Path -LiteralPath $taskDesktopLink)) { throw 'Shortcuts not created.' }
         foreach ($taskFile in @('CatEyeScreenRecorder.exe','NAudio.dll','tools\ffmpeg.exe','CatEyeUpdater.exe','unins000.exe')) {
             if (-not (Test-Path -LiteralPath (Join-Path $taskInstallDir $taskFile))) { throw "Missing installed component: $taskFile" }

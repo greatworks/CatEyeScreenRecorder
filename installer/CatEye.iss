@@ -1,6 +1,6 @@
 ; Build with Inno Setup 6.7.3. Payload is prepared by build-release.ps1.
 #ifndef AppVersion
-  #define AppVersion "2.3.0"
+  #error AppVersion is required; use build-release.ps1
 #endif
 #ifndef PayloadDir
   #error PayloadDir is required

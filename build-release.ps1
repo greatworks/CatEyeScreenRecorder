@@ -3,7 +3,9 @@ param(
     [switch]$TestInstaller
 )
 $ErrorActionPreference = 'Stop'
-$taskVersion = '2.3.0'
+$taskSource = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'UpdateChecker.cs')
+if ($taskSource -notmatch 'CurrentVersionText\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"') { throw 'Version constant missing.' }
+$taskVersion = $Matches[1]
 $taskRoot = $PSScriptRoot
 $taskRelease = Join-Path $taskRoot 'release'
 $taskPayload = Join-Path $taskRelease ('CatEyeScreenRecorder-v' + $taskVersion)
@@ -25,6 +27,6 @@ if (-not $TestInstaller) {
         $taskHash = Get-FileHash -LiteralPath $taskArtifact -Algorithm SHA256
         "$($taskHash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($taskArtifact))"
     }
-    $taskHashes | Set-Content -Encoding ascii -LiteralPath (Join-Path $taskRelease 'SHA256SUMS-v2.3.0.txt')
+    $taskHashes | Set-Content -Encoding ascii -LiteralPath (Join-Path $taskRelease "SHA256SUMS-v$taskVersion.txt")
     Get-Item -LiteralPath $taskSetup,$taskZip | Select-Object FullName,Length
 }

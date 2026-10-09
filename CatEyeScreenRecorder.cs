@@ -11,7 +11,7 @@ using System.Xml;
 [assembly: AssemblyTitle("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyProduct("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyDescription("无水印、轻量、完全免费的 Windows 录屏工具")]
-[assembly: AssemblyVersion("2.3.0.0")]
+[assembly: AssemblyVersion(FreeWindowsScreenRecorder.UpdateChecker.CurrentVersionText + ".0")]
 
 namespace FreeWindowsScreenRecorder
 {
@@ -44,6 +44,8 @@ namespace FreeWindowsScreenRecorder
         private Label saveLabel, statusLabel, qualityTitle, fpsTitle, audioTitle, qualityHint, latestLabel;
         private bool fullScreen = true, busy, saving, closeAfterSave;
         private bool updateCheckStarted;
+        private bool updateInProgress, downloadingUpdate;
+        private ReleaseInfo pendingUpdate;
         private bool layingOutSettings;
         private Rectangle selectedArea;
         private RecordingSession session;
@@ -63,7 +65,11 @@ namespace FreeWindowsScreenRecorder
             ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.Add(trayPause); menu.Items.Add(trayStop); tray.ContextMenuStrip = menu;
             trayPause.Click += delegate { TogglePause(); }; trayStop.Click += delegate { StopRecording(); };
             tray.DoubleClick += delegate { if (session != null) TogglePause(); };
-            uiTimer.Interval = 200; uiTimer.Tick += delegate { UpdateRecordingState(); }; uiTimer.Start();
+            uiTimer.Interval = 200; uiTimer.Tick += async delegate
+            {
+                UpdateRecordingState();
+                if (pendingUpdate != null && !busy && session == null && Visible && !updateInProgress) await CheckForUpdatesAsync();
+            }; uiTimer.Start();
             ResumeLayout(true);
             Shown += delegate
             {
@@ -141,7 +147,7 @@ namespace FreeWindowsScreenRecorder
             DarkButton recordings = LocalButton(sidebar, "▤   录制文件夹", "▤   Recordings", 14, 237, 136, 42, delegate { OpenFolder(); }); recordings.TextAlign = ContentAlignment.MiddleLeft;
             DarkButton about = LocalButton(sidebar, "ⓘ   关于猫眼", "ⓘ   About CatEye", 14, 293, 136, 42, delegate { ShowAbout(); }); about.TextAlign = ContentAlignment.MiddleLeft;
             LocalLabel(sidebar, "本地录制\n清晰记录 · 轻巧留存", "Local recording\nClear & light", 24, 454, 128, 53, 9, Theme.Muted, false);
-            LocalLabel(sidebar, "CATEYE  2.3", "CATEYE  2.3", 24, 531, 126, 20, 8, Color.FromArgb(100, 106, 117), false);
+            LocalLabel(sidebar, "CATEYE  " + UpdateChecker.CurrentVersionText, "CATEYE  " + UpdateChecker.CurrentVersionText, 24, 531, 126, 20, 8, Color.FromArgb(100, 106, 117), false);
             LocalLabel(this, "录制工作台", "Recording workspace", 192, 65, 340, 41, 22, Theme.Text, true);
             LocalLabel(this, "绿色 · 轻量 · 无广告", "Green · Lightweight · Ad-free", 194, 109, 500, 25, 9, Theme.Muted, false);
             LocalLabel(this, "●  高清画面 · 无水印", "●  HD · No watermark", 757, 77, 180, 26, 9, Theme.Accent, false);
@@ -256,17 +262,38 @@ namespace FreeWindowsScreenRecorder
             }
             languageMenu.Show(languageButton, new Point(0, languageButton.Height));
         }
-        private async Task CheckForUpdatesAsync()
+        private async Task CheckForUpdatesAsync(bool manual = false)
         {
-            if (updateCheckStarted || !UpdateChecker.Enabled) return;
-            updateCheckStarted = true;
+            if (updateInProgress || IsDisposed || (!manual && updateCheckStarted && pendingUpdate == null)) return;
+            if (!UpdateChecker.Enabled)
+            {
+                if (manual) MessageBox.Show(this, Localization.Text("请在 update.config 中设置有效的 GitHub 仓库。", "Set a valid GitHub repository in update.config."), Localization.ProductName);
+                return;
+            }
+            updateCheckStarted = true; updateInProgress = true;
             try
             {
-                ReleaseInfo release = await UpdateChecker.CheckLatestAsync();
-                if (release == null || IsDisposed || busy || session != null) return;
+                ReleaseInfo release = pendingUpdate; pendingUpdate = null;
+                if (release == null || manual) release = await UpdateChecker.CheckLatestAsync(manual);
+                if (IsDisposed) return;
+                if (release == null)
+                {
+                    if (manual) MessageBox.Show(this, Localization.Format("未检测到高于当前版本 {0} 的正式发布。", "No stable release newer than {0} was found.", UpdateChecker.CurrentVersionText), Localization.ProductName);
+                    return;
+                }
+                if (busy || session != null) { pendingUpdate = release; return; }
+                if (String.IsNullOrEmpty(release.AssetUrl))
+                {
+                    string missing = Localization.Text("发现新版，但发布者尚未提供 ZIP 自动更新包。是否打开发行页面手动下载？", "A newer release has no ZIP update package. Open the release page to download it manually?");
+                    if (MessageBox.Show(this, missing, Localization.ProductName, MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    {
+                        Uri page; if (Uri.TryCreate(release.HtmlUrl, UriKind.Absolute, out page) && UpdateChecker.IsGithubUrl(page)) Process.Start(page.AbsoluteUri);
+                    }
+                    return;
+                }
                 string prompt = Localization.Format("发现新版本 {0}，是否下载更新？", "Version {0} is available. Download the update?", release.TagName);
                 if (MessageBox.Show(this, prompt, Localization.Text("猫眼录屏更新", "CatEye Screen Recorder update"), MessageBoxButtons.YesNo, MessageBoxIcon.Information) != DialogResult.Yes) return;
-                startButton.Enabled = false; UseWaitCursor = true;
+                downloadingUpdate = true; startButton.Enabled = false; UseWaitCursor = true;
                 statusLabel.Text = Localization.Text("正在下载更新…", "Downloading update…"); statusLabel.ForeColor = Theme.Accent;
                 string package = await UpdateChecker.DownloadAsync(release);
                 UseWaitCursor = false;
@@ -277,8 +304,14 @@ namespace FreeWindowsScreenRecorder
                     UpdateChecker.LaunchInstaller(release, package); Close();
                 }
             }
-            catch (Exception) { }
-            finally { UseWaitCursor = false; if (!IsDisposed && session == null) startButton.Enabled = true; }
+            catch (Exception ex)
+            {
+                UpdateChecker.Log("Update UI: " + ex);
+                if ((manual || downloadingUpdate) && !IsDisposed)
+                    MessageBox.Show(this, Localization.Text("更新检查或下载失败，请检查网络后重试。详情已记录到 update.log。", "Update check or download failed. Check your connection and retry. Details are in update.log.") + Environment.NewLine + ex.Message,
+                        Localization.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally { updateInProgress = false; downloadingUpdate = false; if (!IsDisposed) { UseWaitCursor = false; if (session == null) startButton.Enabled = true; } }
         }
         private void ApplyLanguage()
         {
@@ -304,9 +337,11 @@ namespace FreeWindowsScreenRecorder
             SetComboItems(audioBox, new string[] { "静音（仅画面）", "电脑声音", "麦克风", "电脑声音 + 麦克风" },
                 new string[] { "No audio", "System audio", "Microphone", "System + mic" });
         }
-        private void ShowAbout()
+        private async void ShowAbout()
         {
-            using (AboutDialog dialog = new AboutDialog()) dialog.ShowDialog(this);
+            bool check;
+            using (AboutDialog dialog = new AboutDialog()) { dialog.ShowDialog(this); check = dialog.CheckUpdatesRequested; }
+            if (check) await CheckForUpdatesAsync(true);
         }
         private static void ConfigureCombo(DarkSelect combo, Rectangle bounds)
         {
@@ -344,7 +379,7 @@ namespace FreeWindowsScreenRecorder
         }
         internal async Task StartRecordingAsync()
         {
-            if (busy || session != null) return;
+            if (busy || session != null || downloadingUpdate) return;
             Rectangle area = GetCaptureArea();
             if (area.Width < 2 || area.Height < 2) { await SelectRegionAsync(); return; }
             if (!File.Exists(FfmpegWriter.EncoderPath)) { MessageBox.Show(this, Localization.Text("找不到编码组件，请将 tools 文件夹与程序保持在一起。", "The encoder is missing. Keep the tools folder beside the program."), Localization.ProductName); return; }

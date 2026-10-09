@@ -81,6 +81,11 @@ namespace FreeWindowsScreenRecorder
         private static Dictionary<string, string[]> BuildTranslations()
         {
             Dictionary<string, string[]> map = new Dictionary<string, string[]>(StringComparer.Ordinal);
+            Add(map, "Check for updates", "檢查更新", "Check for updates", "更新を確認", "업데이트 확인", "Updates suchen", "Vérifier les mises à jour", "Buscar actualizaciones", "Verificar atualizações", "Проверить обновления");
+            Add(map, "No stable release newer than {0} was found.", "未偵測到高於目前版本 {0} 的正式發行。", "No stable release newer than {0} was found.", "現在の {0} より新しい正式版はありません。", "현재 버전 {0}보다 새로운 정식 버전이 없습니다.", "Keine neuere stabile Version als {0} gefunden.", "Aucune version stable plus récente que {0}.", "No se encontró una versión estable posterior a {0}.", "Nenhuma versão estável posterior a {0} encontrada.", "Стабильная версия новее {0} не найдена.");
+            Add(map, "Set a valid GitHub repository in update.config.", "請在 update.config 中設定有效的 GitHub 儲存庫。", "Set a valid GitHub repository in update.config.", "update.config に有効な GitHub リポジトリを設定してください。", "update.config에 유효한 GitHub 저장소를 설정하세요.", "Gültiges GitHub-Repository in update.config eintragen.", "Indiquez un dépôt GitHub valide dans update.config.", "Configura un repositorio GitHub válido en update.config.", "Defina um repositório GitHub válido em update.config.", "Укажите правильный репозиторий GitHub в update.config.");
+            Add(map, "A newer release has no ZIP update package. Open the release page to download it manually?", "發現新版，但尚未提供 ZIP 更新套件。要打開發行頁面手動下載嗎？", "A newer release has no ZIP update package. Open the release page to download it manually?", "新しいバージョンには ZIP 更新ファイルがありません。リリースページを開きますか？", "새 버전에 ZIP 업데이트 파일이 없습니다. 릴리스 페이지를 열까요?", "Die neue Version enthält kein ZIP-Update. Release-Seite zum manuellen Download öffnen?", "La nouvelle version n’a pas de mise à jour ZIP. Ouvrir la page pour la télécharger ?", "La nueva versión no tiene un paquete ZIP. ¿Abrir la página para descargarla?", "A nova versão não tem pacote ZIP. Abrir a página para baixar manualmente?", "В новой версии нет ZIP-пакета обновления. Открыть страницу для ручной загрузки?");
+            Add(map, "Update check or download failed. Check your connection and retry. Details are in update.log.", "檢查或下載更新失敗。請檢查網路後重試，詳情見 update.log。", "Update check or download failed. Check your connection and retry. Details are in update.log.", "更新の確認またはダウンロードに失敗しました。接続を確認して再試行してください。詳細: update.log。", "업데이트 확인 또는 다운로드에 실패했습니다. 연결을 확인하고 다시 시도하세요. 자세한 내용: update.log.", "Update fehlgeschlagen. Verbindung prüfen und erneut versuchen. Details: update.log.", "Échec de la mise à jour. Vérifiez la connexion et réessayez. Détails : update.log.", "Error de actualización. Comprueba la conexión e inténtalo de nuevo. Detalles: update.log.", "Falha na atualização. Verifique a conexão e tente novamente. Detalhes: update.log.", "Ошибка обновления. Проверьте подключение и повторите попытку. Подробности: update.log.");
             Add(map, "Audio", "錄製聲音", "Audio", "音声", "오디오", "Audio", "Audio", "Audio", "Áudio", "Звук");
             Add(map, "No audio", "靜音（僅畫面）", "No audio", "音声なし", "소리 없음", "Ohne Ton", "Sans audio", "Sin audio", "Sem áudio", "Без звука");
             Add(map, "System audio", "電腦聲音", "System audio", "システム音声", "시스템 소리", "Systemton", "Son du PC", "Audio del PC", "Áudio do PC", "Звук системы");
@@ -175,6 +180,7 @@ namespace FreeWindowsScreenRecorder
     internal sealed class AboutDialog : Form
     {
         private readonly Label featuresText = new Label();
+        internal bool CheckUpdatesRequested { get; private set; }
         internal AboutDialog()
         {
             SuspendLayout(); Text = Localization.ProductTitle; BackColor = Theme.Background; ForeColor = Theme.Text;
@@ -198,6 +204,9 @@ namespace FreeWindowsScreenRecorder
             Section(contentHost, Localization.Text("网课、游戏、会议、教程、日常屏幕记录", "Classes, games, meetings, tutorials and daily screen records"), new Rectangle(20, 252, 604, 32), 9, Theme.Text, false);
             Section(contentHost, Localization.Text("收费模式：完全免费\n运行环境：Windows 7 SP1 / 8 / 8.1 / 10 / 11", "Pricing: Free\nEnvironment: Windows 7 SP1 / 8 / 8.1 / 10 / 11"), new Rectangle(20, 302, 604, 42), 9, Theme.Muted, false);
             DarkButton close = new DarkButton { Text = Localization.Text("关闭", "Close"), Bounds = new Rectangle(568, 526, 124, 38), Chrome = true, TabStop = false, BackColor = Theme.Accent, ForeColor = Theme.Background }; close.Click += delegate { Close(); }; Controls.Add(close);
+            DarkButton checkUpdates = new DarkButton { Text = Localization.Text("检查更新", "Check for updates"), Bounds = new Rectangle(28, 526, 220, 38) };
+            checkUpdates.Click += delegate { CheckUpdatesRequested = true; Close(); }; Controls.Add(checkUpdates);
+            Theme.Label(this, "v" + typeof(AboutDialog).Assembly.GetName().Version.ToString(3), 270, 536, 200, 24, 9, Theme.Muted, false);
             Paint += delegate(object sender, PaintEventArgs e) { using (Pen border = new Pen(Theme.Border)) e.Graphics.DrawRectangle(border, 0, 0, Width - 1, Height - 1); }; ResumeLayout(true);
         }
         private Label Section(Control parent, string text, Rectangle bounds, float size, Color color, bool bold)

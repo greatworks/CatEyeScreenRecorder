@@ -22,5 +22,6 @@ try {
     if ($taskOutput -ne $PSScriptRoot) {
         Copy-Item -LiteralPath NAudio.dll,CatEyeScreenRecorder.exe.config,CatEyeUpdater.exe.config -Destination $taskOutput
     }
-    Write-Output "Built: $taskOutput (CatEye Screen Recorder 2.3.0)"
+    $taskVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $taskOutput 'CatEyeScreenRecorder.exe')).FileVersion
+    Write-Output "Built: $taskOutput (CatEye Screen Recorder $taskVersion)"
 } finally { Pop-Location }

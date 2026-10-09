@@ -1,4 +1,4 @@
-# 猫眼录屏 · CatEye Screen Recorder 2.3.0
+# 猫眼录屏 · CatEye Screen Recorder 2.3.1
 
 [English README](README.en.md)
 
@@ -12,7 +12,7 @@
 
 ## 开始使用
 
-1. 推荐双击 `CatEyeScreenRecorder-Setup-v2.3.0-Windows-x64.exe` 完成安装，再从开始菜单或桌面打开。便携版完整解压后双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。点击右上角语言按钮可选择简体中文、繁體中文、English、日本語、한국어、Deutsch、Français、Español、Português 或 Русский。
+1. 推荐双击 `CatEyeScreenRecorder-Setup-v2.3.1-Windows-x64.exe` 完成安装，再从开始菜单或桌面打开。便携版完整解压后双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。点击右上角语言按钮可选择简体中文、繁體中文、English、日本語、한국어、Deutsch、Français、Español、Português 或 Русский。
 2. 选择全屏，或点击“自定义区域”拖动鼠标框选矩形。框选时主窗口自动隐藏，松开完成；Esc 或右键取消。
 3. 选择画质、帧率、录制声音和保存目录，点击“开始录制”。主窗口自动隐藏，右下角显示暂停和停止控制条。
 4. 点击“停止”后，软件完成视频保存，再自动恢复主窗口。点击保存结果可以播放视频。
@@ -49,7 +49,11 @@
 
 ## 自动更新
 
-软件支持通过 GitHub Releases 检查更新。发布包中的 `update.config` 默认指向 `greatworks/CatEyeScreenRecorder`；如需关闭检查，可将 `repository=` 留空。该仓库需要创建带有 `CatEyeScreenRecorder` ZIP 资产的 Release，例如 `猫眼录屏-CatEyeScreenRecorder-v2.2-Windows-x64.zip`。程序启动后每天最多检查一次；发现更高版本会提示，确认后下载并校验 Release 资产，再由独立的 `CatEyeUpdater.exe` 等待主程序退出、替换文件并重启。
+软件支持通过 GitHub Releases 检查更新。发布包中的 `update.config` 默认指向 `greatworks/CatEyeScreenRecorder`；如需关闭检查，可将 `repository=` 留空。每个仓库和程序版本的启动检查，在成功后冷却 24 小时；失败不会进入冷却。可随时在“关于猫眼 → 检查更新”手动检查，不受冷却限制。发现更高版本会提示，确认后下载并校验 Release 资产，再由独立的 `CatEyeUpdater.exe` 等待主程序退出、替换文件并重启。录制过程中检测到更新会推迟到录制结束再提示。
+
+发布规则：Release 标签必须使用程序的真实版本，例如 `v2.3.1`，并标为正式版本（非 Draft / Prerelease、设为 Latest）。至少上传 `CatEyeScreenRecorder-v2.3.1-Windows-x64.zip`；安装 EXE 可同时提供，但不能代替 ZIP 自动更新包。ZIP 的程序文件必须位于压缩包根目录。版本号由 `UpdateChecker.CurrentVersionText` 统一驱动程序集、界面和打包，重命名文件不会改变程序内置版本。
+
+2.3.1 修复了中文更新说明的 UTF-8 解码、失败检查冷却、更新路径末尾反斜杠参数转义等问题，新增手动检查和 `%LOCALAPPDATA%\FrameboxRecorder\update.log` 诊断日志。只有安装 EXE 的新发布会提示前往发布页手动下载。旧版更新启动参数本身存在缺陷，建议先手动安装一次 2.3.1，再使用后续自动更新。
 
 更新包应通过 HTTPS 发布，建议同时保留 GitHub Release 的 SHA-256 摘要和版本说明。更新程序不会上传任何数据，也不会修改录制目录或用户设置；网络不可用时继续正常录制。
 
@@ -95,6 +99,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-audio.ps1
 python .\tests\verify-audio-output.py .\validation\audio-对应的时间目录
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build-release.ps1 -TestInstaller
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-installer.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-updates.ps1
 ```
 
 第二步需要 Pillow 和 NumPy；普通用户运行录屏软件不需要这些依赖。验证会短暂显示测试窗口并录制测试画面，结果位于 `validation`。完整测试运行使用真实的 WinForms 消息循环。

@@ -1,4 +1,4 @@
-# CatEye Screen Recorder 2.3.0
+# CatEye Screen Recorder 2.3.1
 
 [中文说明](README.md)
 
@@ -23,7 +23,7 @@ Online classes, game clips, meeting notes, software tutorials and everyday scree
 
 ## Quick start
 
-1. Run `CatEyeScreenRecorder-Setup-v2.3.0-Windows-x64.exe` to install, then launch from Start or the desktop. Alternatively, extract the complete portable ZIP and run `CatEyeScreenRecorder.exe` or `run.bat`.
+1. Run `CatEyeScreenRecorder-Setup-v2.3.1-Windows-x64.exe` to install, then launch from Start or the desktop. Alternatively, extract the complete portable ZIP and run `CatEyeScreenRecorder.exe` or `run.bat`.
 2. Choose **Full screen** or **Custom area**, then drag a rectangle to select the capture region. Press `Esc` or right-click to cancel area selection.
 3. Select quality, frame rate, audio source and the output folder, then click **Start recording**.
 4. Use the bottom-right floating controls or the hotkeys to pause, resume or stop. The main window returns after the file has been saved.
@@ -83,7 +83,11 @@ The application manifest advertises the Windows 7 SP1 through Windows 11 compati
 
 ## Automatic updates
 
-The application can check GitHub Releases for updates. `update.config` points to `greatworks/CatEyeScreenRecorder` by default. A release should publish a `CatEyeScreenRecorder` ZIP asset, such as `猫眼录屏-CatEyeScreenRecorder-v2.2-Windows-x64.zip`. The application checks at most once per day, asks before downloading, verifies the release asset, and lets the separate `CatEyeUpdater.exe` replace files after the main process exits.
+The application checks GitHub Releases using `greatworks/CatEyeScreenRecorder` in `update.config`. Successful automatic checks are cached for 24 hours per repository and application version; failures do not start that cooldown. **About CatEye → Check for updates** bypasses the cooldown. Updates detected during a recording are deferred until recording ends. The app asks before downloading, verifies the asset digest when provided, and lets `CatEyeUpdater.exe` replace files after the main process exits.
+
+Use a stable, non-draft release marked Latest with a tag matching the actual application version, for example `v2.3.1`. Upload `CatEyeScreenRecorder-v2.3.1-Windows-x64.zip` with application files at its root. The installer EXE can accompany the ZIP but cannot replace it for automatic updates. `UpdateChecker.CurrentVersionText` is the shared source for assembly, UI and package versions; renaming a file does not change its internal version.
+
+Version 2.3.1 fixes UTF-8 release-note decoding, failed-check cooldowns and trailing-backslash command-line quoting. It adds manual checks and diagnostics at `%LOCALAPPDATA%\FrameboxRecorder\update.log`. A newer EXE-only release offers a manual-download page. Because old versions have a defective updater launch command, install 2.3.1 manually once before relying on future automatic updates.
 
 Updates use HTTPS and do not upload recordings or change the recording folder and user settings. If the network is unavailable, local recording continues normally.
 
@@ -97,6 +101,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-audio.ps1
 python .\tests\verify-audio-output.py .\validation\audio-<timestamp>
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build-release.ps1 -TestInstaller
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-installer.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-updates.ps1
 ```
 
 The video verification script needs Pillow and NumPy. Normal users do not need these development dependencies. Validation covers high-DPI full-screen capture, custom-area coordinates, UI hide and restore, floating controls, capture exclusion, pause timing, stop and save, lossless pixel equality, and odd-sized frame encoding.
