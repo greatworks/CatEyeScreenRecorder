@@ -14,6 +14,10 @@ CatEye Screen Recorder invokes FFmpeg as a separate executable for video encodin
 
 The development folder also includes ffprobe for validation. The portable user package only needs ffmpeg.exe and its license. Keep third-party license notices with copied components.
 
+Audio capture uses the unmodified NAudio 1.10.0 .NET Framework 3.5 assembly from NuGet. Copyright Mark Heath and contributors. This version is distributed under the Microsoft Public License (Ms-PL). The complete license, package URL, DLL/package hashes and pinned source link are retained in `vendor/NAudio/LICENSE.txt` and `vendor/NAudio/NOTICE.txt`. Audio capture uses the Windows WASAPI shared-mode and loopback APIs; AAC/FLAC encoding remains in the external FFmpeg process.
+
+The installer is built with Inno Setup 6.7.3 (https://jrsoftware.org/), Copyright Jordan Russell and Martijn Laan. Chinese translations were retrieved from the official source repository under `Files/Languages/ChineseSimplified.isl` and `ChineseTraditional.isl` on 2026-10-09; original contributor notices remain in those files. Installer build dependencies are not required to run CatEye. See `installer/INNO-LICENSE.txt` for Inno Setup's license.
+
 Implementation references:
 
 - FFmpeg libx264/libx264rgb encoder documentation: https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb

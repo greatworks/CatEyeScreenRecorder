@@ -59,4 +59,5 @@ TestResult.xml
 validation/
 release/
 UpgradeTests.exe
+AudioTests.exe
 nunit-*.xml

@@ -1,0 +1,8 @@
+NAudio 1.10.0 (.NET Framework 3.5 assembly; runs on CatEye's .NET 4.5.2 baseline)
+Copyright Mark Heath and contributors.
+License: Microsoft Public License (Ms-PL), retained in LICENSE.txt.
+Source: https://github.com/naudio/NAudio/tree/v1.10.0
+Package: https://api.nuget.org/v3-flatcontainer/naudio/1.10.0/naudio.1.10.0.nupkg
+Package SHA256: e4a80eed41dad794695f9c114432de4667d20bdfa80825aa94d159708cf29217
+NAudio.dll SHA256: bc4bacc3b8b28d898f1671b79f216cca439f95eb60cd32d3e3ecafbecac42780
+Downloaded 2026-10-09. Unmodified lib/net35/NAudio.dll. No additional NuGet dependencies.

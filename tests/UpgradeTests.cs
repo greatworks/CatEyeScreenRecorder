@@ -18,6 +18,10 @@ internal static class UpgradeTests
         output = args[0]; Directory.CreateDirectory(output);
         Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         int result = 0;
+        string preferences = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FrameboxRecorder", "settings.xml");
+        byte[] originalPreferences = File.Exists(preferences) ? File.ReadAllBytes(preferences) : null;
+        try
+        {
         using (Form harness = new Form { ShowInTaskbar = false, Opacity = 0 })
         {
             harness.Shown += delegate
@@ -36,6 +40,12 @@ internal static class UpgradeTests
             };
             Application.Run(harness);
         }
+        }
+        finally
+        {
+            if (originalPreferences != null) File.WriteAllBytes(preferences, originalPreferences);
+            else if (File.Exists(preferences)) File.Delete(preferences);
+        }
         return result;
     }
     private static void RenderUi()
@@ -48,6 +58,7 @@ internal static class UpgradeTests
             Check(capture == SystemInformation.VirtualScreen, "Full-screen coverage");
             DarkSelect quality = (DarkSelect)Field(form, "qualityBox");
             DarkSelect fps = (DarkSelect)Field(form, "fpsBox");
+            DarkSelect audio = (DarkSelect)Field(form, "audioBox");
             CardPanel settings = (CardPanel)Field(form, "settingsPanel");
             Label qualityHint = (Label)Field(form, "qualityHint");
             DarkButton language = (DarkButton)Field(form, "languageButton");
@@ -56,6 +67,9 @@ internal static class UpgradeTests
             Check(quality.VisualHeight <= quality.Font.Height + 12 && fps.VisualHeight <= fps.Font.Height + 12, "Combo box frames stay close to the text height");
             Check(quality.Bottom <= settings.ClientSize.Height && fps.Bottom <= settings.ClientSize.Height && qualityHint.Top >= Math.Max(quality.Top + quality.VisualHeight, fps.Top + fps.VisualHeight), "Quality and frame-rate rows do not overlap");
             Check(quality.Cursor == Cursors.Default && fps.Cursor == Cursors.Default, "System default pointer on clickable controls");
+            Check(quality.Right < fps.Left && fps.Right < audio.Left && audio.Right < settings.ClientSize.Width,
+                "Quality, frame rate, and audio fit in one row");
+            Check(audio.VisualHeight <= audio.Font.Height + 12 && audio.Items.Count == 4, "Four audio modes have a compact dropdown");
             Check(reselect.Bounds.X > 700 && reselect.Bounds.Y > 250, "Reselect button is beside the resolution preview");
             ReleaseInfo fixture = UpdateChecker.ParseReleaseForTest("{\"tag_name\":\"v9.9.0\",\"draft\":false,\"prerelease\":false,\"html_url\":\"https://github.com/example/cateye/releases/tag/v9.9.0\",\"assets\":[{\"name\":\"猫眼录屏-CatEyeScreenRecorder-v9.9-Windows-x64.zip\",\"browser_download_url\":\"https://github.com/example/cateye/releases/download/v9.9.0/update.zip\",\"digest\":\"sha256:abc\"}]}");
             Check(fixture != null && fixture.Version.Major == 9 && fixture.Version.Minor == 9 && fixture.AssetUrl.EndsWith("update.zip", StringComparison.Ordinal), "GitHub release response parsing");
@@ -69,6 +83,8 @@ internal static class UpgradeTests
             {
                 languageMenu.Items[languageIndex].PerformClick(); Pump(20);
                 Check(form.Text.Length > 0 && language.Text == Localization.ShortCode, "Language switch " + Localization.Languages[languageIndex].Code);
+                if (Localization.Current != AppLanguage.English && Localization.Current != AppLanguage.SimplifiedChinese)
+                    Check(audio.Items[1].ToString() != "System audio", "Localized audio choices " + Localization.Code);
                 if (Localization.Languages[languageIndex].Language == AppLanguage.TraditionalChinese) Check(form.Text.IndexOf("猫眼录屏", StringComparison.Ordinal) >= 0, "Traditional Chinese keeps the CatEye brand in Chinese");
                 if (Localization.Languages[languageIndex].Language != AppLanguage.SimplifiedChinese && Localization.Languages[languageIndex].Language != AppLanguage.TraditionalChinese) Check(form.Text.IndexOf("CatEye", StringComparison.Ordinal) >= 0, "Non-Chinese languages keep the CatEye brand in English");
                 if (Localization.Languages[languageIndex].Language == AppLanguage.TraditionalChinese)
@@ -242,6 +258,7 @@ internal static class UpgradeTests
                 Check(form.GetCaptureArea().Size == new Size(400, 240), "Selection boundary aligned to 2 pixels for standard MP4");
                 ((TextBox)Field(form, "outputBox")).Text = output;
                 ((DarkSelect)Field(form, "qualityBox")).SelectedIndex = 1;
+                ((DarkSelect)Field(form, "audioBox")).SelectedIndex = 0;
                 Console.WriteLine("Workflow: start recording");
                 ((DarkButton)Field(form, "startButton")).PerformClick();
                 WaitUntil(delegate { return Field(form, "session") != null; }, 10000);

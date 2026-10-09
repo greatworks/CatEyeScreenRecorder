@@ -11,7 +11,7 @@ using System.Xml;
 [assembly: AssemblyTitle("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyProduct("猫眼录屏 CatEye Screen Recorder")]
 [assembly: AssemblyDescription("无水印、轻量、完全免费的 Windows 录屏工具")]
-[assembly: AssemblyVersion("2.2.0.0")]
+[assembly: AssemblyVersion("2.3.0.0")]
 
 namespace FreeWindowsScreenRecorder
 {
@@ -21,14 +21,16 @@ namespace FreeWindowsScreenRecorder
         private static void Main()
         {
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new RecorderForm());
+            // Installer checks this named mutex instead of terminating an active recording.
+            using (System.Threading.Mutex appMutex = new System.Threading.Mutex(false, "CatEyeScreenRecorder.Running"))
+                Application.Run(new RecorderForm());
         }
     }
 
     internal sealed class RecorderForm : Form
     {
         private readonly TextBox outputBox = new TextBox();
-        private readonly DarkSelect qualityBox = new DarkSelect(), fpsBox = new DarkSelect();
+        private readonly DarkSelect qualityBox = new DarkSelect(), fpsBox = new DarkSelect(), audioBox = new DarkSelect();
         private readonly DarkButton fullButton = new DarkButton(), regionButton = new DarkButton(), selectButton = new DarkButton(), startButton = new DarkButton();
         private readonly DarkButton languageButton = new DarkButton();
         private ContextMenuStrip languageMenu;
@@ -39,7 +41,7 @@ namespace FreeWindowsScreenRecorder
         private readonly ToolStripMenuItem trayPause = new ToolStripMenuItem("暂停录制"), trayStop = new ToolStripMenuItem("停止并保存");
         private CardPanel settingsPanel;
         private DarkButton changeFolderButton;
-        private Label saveLabel, statusLabel, qualityTitle, fpsTitle, qualityHint, latestLabel;
+        private Label saveLabel, statusLabel, qualityTitle, fpsTitle, audioTitle, qualityHint, latestLabel;
         private bool fullScreen = true, busy, saving, closeAfterSave;
         private bool updateCheckStarted;
         private bool layingOutSettings;
@@ -75,13 +77,13 @@ namespace FreeWindowsScreenRecorder
         {
             if (IsDisposed || qualityBox.IsDisposed || fpsBox.IsDisposed || qualityBox.Parent == null) return;
             LayoutSettingsPanel();
-            qualityBox.Invalidate(); fpsBox.Invalidate();
+            qualityBox.Invalidate(); fpsBox.Invalidate(); audioBox.Invalidate();
         }
 
         private void LayoutSettingsPanel()
         {
             if (settingsPanel == null || settingsPanel.IsDisposed || settingsPanel.Width <= 0) return;
-            qualityBox.NormalizeDpiBounds(); fpsBox.NormalizeDpiBounds();
+            qualityBox.NormalizeDpiBounds(); fpsBox.NormalizeDpiBounds(); audioBox.NormalizeDpiBounds();
             float scale = settingsPanel.Width / 704f;
             if (scale <= 0f) scale = 1f;
             int padding = Math.Max(18, (int)Math.Round(18f * scale));
@@ -89,18 +91,22 @@ namespace FreeWindowsScreenRecorder
             int rowTop = Math.Max(36, (int)Math.Round(40f * scale));
             int rowHeight = Math.Max(24, Math.Max(qualityBox.Font.Height + 8, fpsBox.Font.Height + 8));
             int hintTop = rowTop + rowHeight + Math.Max(6, (int)Math.Round(8f * scale));
-            int leftWidth = Math.Max(220, (int)Math.Round(250f * scale));
-            int rightX = Math.Max(padding + 150, (int)Math.Round(430f * scale));
-            int rightWidth = Math.Max(170, (int)Math.Round(180f * scale));
+            int leftWidth = (int)Math.Round(250f * scale);
+            int rightX = (int)Math.Round(284f * scale);
+            int rightWidth = (int)Math.Round(180f * scale);
+            int audioX = (int)Math.Round(480f * scale);
+            int audioWidth = settingsPanel.ClientSize.Width - audioX - padding;
             int titleHeight = Math.Max(23, (int)Math.Round(23f * scale));
             int hintHeight = Math.Max(20, Math.Max((int)Math.Round(22f * scale), qualityHint == null ? 20 : qualityHint.Font.Height + 4));
             rowHeight = Math.Max(rowHeight, Math.Max(24, Math.Max(qualityBox.Font.Height + 8, fpsBox.Font.Height + 8)));
             hintTop = rowTop + rowHeight + Math.Max(6, (int)Math.Round(8f * scale));
             if (qualityTitle != null) qualityTitle.Bounds = new Rectangle(padding, top, leftWidth, titleHeight);
             if (fpsTitle != null) fpsTitle.Bounds = new Rectangle(rightX, top, rightWidth, titleHeight);
+            if (audioTitle != null) audioTitle.Bounds = new Rectangle(audioX, top, audioWidth, titleHeight);
             qualityBox.LogicalBounds = new Rectangle(18, 40, 250, 28); qualityBox.Bounds = new Rectangle(padding, rowTop, leftWidth, rowHeight);
-            fpsBox.LogicalBounds = new Rectangle(430, 40, 180, 28); fpsBox.Bounds = new Rectangle(rightX, rowTop, rightWidth, rowHeight);
-            if (qualityHint != null) qualityHint.Bounds = new Rectangle(padding, hintTop, Math.Max(160, rightX - padding - 10), hintHeight);
+            fpsBox.LogicalBounds = new Rectangle(284, 40, 180, 28); fpsBox.Bounds = new Rectangle(rightX, rowTop, rightWidth, rowHeight);
+            audioBox.LogicalBounds = new Rectangle(480, 40, 206, 28); audioBox.Bounds = new Rectangle(audioX, rowTop, audioWidth, rowHeight);
+            if (qualityHint != null) qualityHint.Bounds = new Rectangle(padding, hintTop, settingsPanel.Width - padding * 2, hintHeight);
             int requiredHeight = Math.Max((int)Math.Round(102f * scale), hintTop + hintHeight + Math.Max(8, (int)Math.Round(8f * scale)));
             if (settingsPanel.Height != requiredHeight) settingsPanel.Height = requiredHeight;
             int delta = settingsPanel.Height - Math.Max(118, (int)Math.Round(118f * scale));
@@ -135,7 +141,7 @@ namespace FreeWindowsScreenRecorder
             DarkButton recordings = LocalButton(sidebar, "▤   录制文件夹", "▤   Recordings", 14, 237, 136, 42, delegate { OpenFolder(); }); recordings.TextAlign = ContentAlignment.MiddleLeft;
             DarkButton about = LocalButton(sidebar, "ⓘ   关于猫眼", "ⓘ   About CatEye", 14, 293, 136, 42, delegate { ShowAbout(); }); about.TextAlign = ContentAlignment.MiddleLeft;
             LocalLabel(sidebar, "本地录制\n清晰记录 · 轻巧留存", "Local recording\nClear & light", 24, 454, 128, 53, 9, Theme.Muted, false);
-            LocalLabel(sidebar, "CATEYE  2.0", "CATEYE  2.0", 24, 531, 126, 20, 8, Color.FromArgb(100, 106, 117), false);
+            LocalLabel(sidebar, "CATEYE  2.3", "CATEYE  2.3", 24, 531, 126, 20, 8, Color.FromArgb(100, 106, 117), false);
             LocalLabel(this, "录制工作台", "Recording workspace", 192, 65, 340, 41, 22, Theme.Text, true);
             LocalLabel(this, "绿色 · 轻量 · 无广告", "Green · Lightweight · Ad-free", 194, 109, 500, 25, 9, Theme.Muted, false);
             LocalLabel(this, "●  高清画面 · 无水印", "●  HD · No watermark", 757, 77, 180, 26, 9, Theme.Accent, false);
@@ -155,6 +161,10 @@ namespace FreeWindowsScreenRecorder
             fpsTitle = LocalLabel(settingsPanel, "帧率", "Frame rate", 430, 13, 180, 23, 9, Theme.Muted, false);
             ConfigureCombo(fpsBox, new Rectangle(430, 40, 180, 36));
             SetComboItems(fpsBox, new string[] { "15 FPS · 文档演示", "30 FPS · 日常录制", "60 FPS · 流畅动态" }, new string[] { "15 FPS · Docs", "30 FPS · Daily", "60 FPS · Smooth" }); settingsPanel.Controls.Add(fpsBox);
+            audioTitle = LocalLabel(settingsPanel, "录制声音", "Audio", 480, 13, 206, 23, 9, Theme.Muted, false);
+            ConfigureCombo(audioBox, new Rectangle(480, 40, 206, 28));
+            SetAudioItems(); audioBox.SelectedIndex = (int)AudioMode.System;
+            settingsPanel.Controls.Add(audioBox);
             LayoutSettingsPanel();
             saveLabel = LocalLabel(this, "保存到", "Save to", 194, 493, 72, 26, 9, Theme.Muted, false);
             outputBox.Bounds = new Rectangle(264, 491, 505, 28); outputBox.BackColor = Theme.Card; outputBox.ForeColor = Theme.Text;
@@ -278,6 +288,7 @@ namespace FreeWindowsScreenRecorder
             trayPause.Text = Localization.Text("暂停录制", "Pause recording"); trayStop.Text = Localization.Text("停止并保存", "Stop and save");
             SetComboItems(qualityBox, new string[] { "高清省空间 · MP4（推荐）", "原画无损 · MKV" }, new string[] { "HQ MP4 · Compact", "Lossless MKV" });
             SetComboItems(fpsBox, new string[] { "15 FPS · 文档演示", "30 FPS · 日常录制", "60 FPS · 流畅动态" }, new string[] { "15 FPS · Docs", "30 FPS · Daily", "60 FPS · Smooth" });
+            SetAudioItems();
             UpdateQualityHint();
             if (!string.IsNullOrEmpty(latestFile) && File.Exists(latestFile)) SetLatestPlaybackText();
             else { latestLabel.Cursor = Cursors.Default; latestLabel.ForeColor = Theme.Muted; latestLabel.Font = Theme.Font(8, false); }
@@ -287,6 +298,11 @@ namespace FreeWindowsScreenRecorder
         {
             latestLabel.Text = Localization.Text("点击播放  ", "Click to play  ") + Path.GetFileName(latestFile);
             latestLabel.ForeColor = Theme.Accent; latestLabel.Cursor = Cursors.Hand; latestLabel.Font = Theme.Font(8, true);
+        }
+        private void SetAudioItems()
+        {
+            SetComboItems(audioBox, new string[] { "静音（仅画面）", "电脑声音", "麦克风", "电脑声音 + 麦克风" },
+                new string[] { "No audio", "System audio", "Microphone", "System + mic" });
         }
         private void ShowAbout()
         {
@@ -350,7 +366,7 @@ namespace FreeWindowsScreenRecorder
                 // Do not add a notification-area icon to the recorded desktop when the protected toolbar is available.
                 tray.Visible = !floating; trayPause.Enabled = trayStop.Enabled = true;
                 if (!floating) tray.ShowBalloonTip(4000, Localization.ProductName, Localization.Text("此系统不支持排除悬浮条，已使用托盘控制。右键托盘图标可暂停或停止。", "This system cannot exclude the floating bar, so the tray controls are used. Right-click the tray icon to pause or stop."), ToolTipIcon.Info);
-                session = new RecordingSession(area, fps, path, quality);
+                session = new RecordingSession(area, fps, path, quality, (AudioMode)Math.Max(0, audioBox.SelectedIndex));
                 session.Completed += delegate(string output, Exception error) { BeginInvoke(new Action(delegate { RecordingCompleted(output, error); })); };
                 session.Start();
             }
@@ -422,7 +438,7 @@ namespace FreeWindowsScreenRecorder
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
                 XmlDocument doc = new XmlDocument(); XmlElement root = doc.CreateElement("settings"); doc.AppendChild(root);
-                root.SetAttribute("output", outputBox.Text); root.SetAttribute("quality", qualityBox.SelectedIndex.ToString()); root.SetAttribute("fps", fpsBox.SelectedIndex.ToString()); root.SetAttribute("language", Localization.Code); doc.Save(settingsPath);
+                root.SetAttribute("output", outputBox.Text); root.SetAttribute("quality", qualityBox.SelectedIndex.ToString()); root.SetAttribute("fps", fpsBox.SelectedIndex.ToString()); root.SetAttribute("audio", audioBox.SelectedIndex.ToString()); root.SetAttribute("language", Localization.Code); doc.Save(settingsPath);
             }
             catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
@@ -436,6 +452,7 @@ namespace FreeWindowsScreenRecorder
                 Localization.SetFromCode(root.GetAttribute("language"));
                 int value; if (int.TryParse(root.GetAttribute("quality"), out value) && value >= 0 && value < 2) qualityBox.SelectedIndex = value;
                 if (int.TryParse(root.GetAttribute("fps"), out value) && value >= 0 && value < 3) fpsBox.SelectedIndex = value;
+                if (int.TryParse(root.GetAttribute("audio"), out value) && value >= 0 && value < 4) audioBox.SelectedIndex = value;
             }
             catch (Exception) { }
         }

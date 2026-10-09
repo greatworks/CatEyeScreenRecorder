@@ -1,10 +1,12 @@
+param([string]$ApplicationDirectory = (Split-Path -Parent $PSScriptRoot))
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+$taskAppDirectory = [IO.Path]::GetFullPath($ApplicationDirectory)
 Push-Location $root
 try {
     $manifest = Get-Content -Raw app.manifest
-    $config = Get-Content -Raw CatEyeScreenRecorder.exe.config
-    $updaterConfig = Get-Content -Raw CatEyeUpdater.exe.config
+    $config = Get-Content -Raw (Join-Path $taskAppDirectory 'CatEyeScreenRecorder.exe.config')
+    $updaterConfig = Get-Content -Raw (Join-Path $taskAppDirectory 'CatEyeUpdater.exe.config')
     $source = (Get-Content -Raw CatEyeScreenRecorder.cs) + (Get-Content -Raw Native.cs)
     $requiredGuids = @(
         '35138b9a-5d96-4fbd-8e2d-a2440225f93a',
@@ -22,13 +24,14 @@ try {
     if (-not (Test-Path -LiteralPath README.en.md)) { throw 'English README is missing.' }
     $readme = Get-Content -Raw README.md
     if ($readme -notmatch 'Windows 11 24H2 / 25H2 / 26H1 / 26H2') { throw 'README compatibility description is stale.' }
-    if (-not (Test-Path -LiteralPath tools\ffmpeg.exe)) { throw 'tools\ffmpeg.exe is missing.' }
-    $ffmpegVersion = (& (Join-Path $root 'tools\ffmpeg.exe') -version | Select-Object -First 1)
+    if (-not (Test-Path -LiteralPath (Join-Path $taskAppDirectory 'NAudio.dll'))) { throw 'NAudio.dll is missing.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $taskAppDirectory 'tools\ffmpeg.exe'))) { throw 'tools\ffmpeg.exe is missing.' }
+    $ffmpegVersion = (& (Join-Path $taskAppDirectory 'tools\ffmpeg.exe') -version | Select-Object -First 1)
     if ($ffmpegVersion -notmatch 'ffmpeg version 6\.1\.1') { throw "Unexpected FFmpeg build: $ffmpegVersion" }
-    $pe = [BitConverter]::ToUInt16([IO.File]::ReadAllBytes((Join-Path $root 'CatEyeScreenRecorder.exe')), 0)
+    $pe = [BitConverter]::ToUInt16([IO.File]::ReadAllBytes((Join-Path $taskAppDirectory 'CatEyeScreenRecorder.exe')), 0)
     if ($pe -ne 0x5A4D) { throw 'Recorder executable is not a Windows PE file.' }
-    if (-not (Test-Path -LiteralPath CatEyeScreenRecorder.exe)) { throw 'Recorder executable is missing.' }
-    $process = Start-Process -FilePath (Join-Path $root 'CatEyeScreenRecorder.exe') -PassThru
+    if (-not (Test-Path -LiteralPath (Join-Path $taskAppDirectory 'CatEyeScreenRecorder.exe'))) { throw 'Recorder executable is missing.' }
+    $process = Start-Process -FilePath (Join-Path $taskAppDirectory 'CatEyeScreenRecorder.exe') -WindowStyle Hidden -PassThru
     Start-Sleep -Milliseconds 900
     if ($process.HasExited) { throw "Recorder exited during startup smoke test with code $($process.ExitCode)." }
     Stop-Process -Id $process.Id -Force

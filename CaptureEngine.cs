@@ -107,12 +107,14 @@ namespace FreeWindowsScreenRecorder
     internal sealed class RecordingSession
     {
         private readonly object gate = new object();
-        private readonly Stopwatch activeClock = new Stopwatch();
+        private readonly RecordingClock activeClock = new RecordingClock();
         private readonly AutoResetEvent changed = new AutoResetEvent(false);
         private readonly Rectangle area;
         private readonly int fps;
         private readonly string outputPath;
         private readonly VideoQuality quality;
+        private readonly AudioMode audioMode;
+        private bool recordingReady;
         private bool stopping, paused;
         private Thread worker;
         private long frameCount;
@@ -124,9 +126,15 @@ namespace FreeWindowsScreenRecorder
         public string OutputPath { get { return outputPath; } }
 
         public RecordingSession(Rectangle area, int fps, string path, VideoQuality quality)
+            : this(area, fps, path, quality, AudioMode.None) { }
+
+        public RecordingSession(Rectangle area, int fps, string path, VideoQuality quality, AudioMode audioMode)
         {
             if (area.Width < 2 || area.Height < 2) throw new ArgumentException("录制区域至少为 2 × 2 像素。");
+            if (fps < 1 || fps > 120) throw new ArgumentOutOfRangeException("fps");
+            if (!Enum.IsDefined(typeof(AudioMode), audioMode)) throw new ArgumentOutOfRangeException("audioMode");
             this.area = area; this.fps = fps; outputPath = path; this.quality = quality;
+            this.audioMode = audioMode;
         }
 
         public void Start()
@@ -145,32 +153,44 @@ namespace FreeWindowsScreenRecorder
             {
                 if (stopping) return;
                 paused = !paused;
-                if (paused) activeClock.Stop(); else activeClock.Start();
+                if (paused) activeClock.Pause(); else if (recordingReady) activeClock.Resume();
                 changed.Set();
             }
         }
 
         public void Stop()
         {
-            lock (gate) { if (stopping) return; stopping = true; activeClock.Stop(); changed.Set(); }
+            lock (gate) { if (stopping) return; stopping = true; activeClock.Pause(); changed.Set(); }
         }
 
         private void Run()
         {
             string partial = Path.Combine(Path.GetDirectoryName(outputPath), Path.GetFileNameWithoutExtension(outputPath) + ".recording" + Path.GetExtension(outputPath));
+            // A private working folder also keeps Explorer away from unfinished media.
+            string work = audioMode == AudioMode.None ? null : Path.Combine(Path.GetDirectoryName(outputPath), ".cateye-" + Guid.NewGuid().ToString("N"));
+            string video = work == null ? partial : Path.Combine(work, "video" + Path.GetExtension(outputPath));
+            string sound = work == null ? null : Path.Combine(work, "audio.flac");
+            string combined = work == null ? null : Path.Combine(work, "combined" + Path.GetExtension(outputPath));
+            AudioRecording audio = null;
             Exception failure = null;
             try
             {
-                using (FfmpegWriter writer = new FfmpegWriter(partial, area.Width, area.Height, fps, quality))
+                if (work != null)
+                {
+                    Directory.CreateDirectory(work); File.SetAttributes(work, FileAttributes.Hidden | FileAttributes.Directory);
+                    audio = new AudioRecording(activeClock, audioMode, sound); audio.Start();
+                }
+                using (FfmpegWriter writer = new FfmpegWriter(video, area.Width, area.Height, fps, quality))
                 using (Bitmap frame = new Bitmap(area.Width, area.Height, PixelFormat.Format24bppRgb))
                 using (Graphics graphics = Graphics.FromImage(frame))
                 {
-                    lock (gate) { if (!paused && !stopping) activeClock.Start(); }
+                    lock (gate) { recordingReady = true; if (!paused && !stopping) activeClock.Resume(); }
                     bool captured = false;
                     while (true)
                     {
                         bool stop, pause; double seconds;
                         lock (gate) { stop = stopping; pause = paused; seconds = activeClock.Elapsed.TotalSeconds; }
+                        if (audio != null) audio.CheckFailure();
                         if (stop) break;
                         if (pause) { changed.WaitOne(100); continue; }
                         long due = (long)Math.Floor(seconds * fps);
@@ -184,18 +204,38 @@ namespace FreeWindowsScreenRecorder
                     if (!captured) { CaptureFrame(graphics, area); }
                     long total = Math.Max(1, (long)Math.Ceiling(Elapsed.TotalSeconds * fps));
                     while (FrameCount < total) { writer.AddFrame(frame); Interlocked.Increment(ref frameCount); }
+                    if (audio != null) audio.Finish(FrameCount / (double)fps);
                     writer.Finish();
                 }
-                File.Move(partial, outputPath);
+                if (audio != null)
+                {
+                    AudioEncoder.Mux(video, sound, combined, quality, FrameCount / (double)fps);
+                    File.Move(combined, outputPath);
+                    // Delete only the two files created by this session after successful muxing.
+                    try { File.Delete(video); File.Delete(sound); Directory.Delete(work); }
+                    catch (IOException) { } catch (UnauthorizedAccessException) { }
+                }
+                else File.Move(partial, outputPath);
                 File.SetAttributes(outputPath, FileAttributes.Normal);
             }
             catch (Exception ex) { failure = ex; }
             finally
             {
-                lock (gate) { stopping = true; activeClock.Stop(); }
+                lock (gate) { stopping = true; activeClock.Pause(); }
+                if (audio != null) audio.Dispose();
+                if (failure != null && work != null && Directory.Exists(work))
+                {
+                    // Make recoverable media discoverable on device/encoder failure.
+                    try
+                    {
+                        File.SetAttributes(work, FileAttributes.Directory);
+                        foreach (string item in Directory.GetFiles(work)) File.SetAttributes(item, FileAttributes.Normal);
+                    }
+                    catch (IOException) { } catch (UnauthorizedAccessException) { }
+                }
                 changed.Dispose();
                 Action<string, Exception> done = Completed;
-                if (done != null) done(failure == null ? outputPath : partial, failure);
+                if (done != null) done(failure == null ? outputPath : (work ?? partial), failure);
             }
         }
     }

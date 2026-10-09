@@ -1,4 +1,4 @@
-# CatEye Screen Recorder 2.2.0
+# CatEye Screen Recorder 2.3.0
 
 [中文说明](README.md)
 
@@ -23,12 +23,32 @@ Online classes, game clips, meeting notes, software tutorials and everyday scree
 
 ## Quick start
 
-1. Run `CatEyeScreenRecorder.exe`, or launch `run.bat`.
+1. Run `CatEyeScreenRecorder-Setup-v2.3.0-Windows-x64.exe` to install, then launch from Start or the desktop. Alternatively, extract the complete portable ZIP and run `CatEyeScreenRecorder.exe` or `run.bat`.
 2. Choose **Full screen** or **Custom area**, then drag a rectangle to select the capture region. Press `Esc` or right-click to cancel area selection.
-3. Select quality, frame rate and the output folder, then click **Start recording**.
+3. Select quality, frame rate, audio source and the output folder, then click **Start recording**.
 4. Use the bottom-right floating controls or the hotkeys to pause, resume or stop. The main window returns after the file has been saved.
 
-The `tools` folder contains the video encoder and must stay beside the executable. Extract the complete portable ZIP before running it.
+Keep `NAudio.dll` and the `tools` folder beside the executable. Extract the complete portable ZIP before running it.
+
+## Audio recording (new in 2.3)
+
+Choose **System audio** (default), **Microphone**, **System + mic**, or **No audio**. The selection is saved. System audio records the Windows default playback endpoint; microphone uses the default recording endpoint. Set these devices before starting. WASAPI requires no virtual audio driver, and audio devices are released after stopping or an error.
+
+Audio and video share a clock: pauses remove both tracks' paused content, and silent intervals retain their duration. Both MP4 and MKV use stereo AAC at 48 kHz, targeting 192 kbps. Lossless mode means lossless video pixels; audio is compressed. When mixing both sources, each is attenuated by approximately 6 dB for headroom. Video is copied without a second compression pass.
+
+Compressed temporary audio/video files need additional free disk space while saving. Successful saves remove intermediates; failures preserve recoverable files. Enable Windows microphone access for desktop applications. Unavailable/disconnected devices produce an error rather than silently switching source. Use headphones to prevent speaker echo in microphone recordings. Remote sessions expose only the endpoints permitted by their audio-redirection settings.
+
+## Installation and removal
+
+The installer targets Windows 7 SP1 or later, x64, with .NET Framework 4.5.2 or later, and checks prerequisites. The setup wizard includes the same 10 languages as the application.
+
+- Installs for the current user under `%LOCALAPPDATA%\Programs\CatEye Screen Recorder`, normally without administrator rights.
+- Adds Start menu and optional desktop shortcuts, plus a Windows Installed apps / Apps & features entry (Programs and Features on Windows 7).
+- Running setup again upgrades the installation. Setup refuses to update/uninstall a running recorder rather than terminating a recording.
+- Uninstall preserves recordings and user preferences.
+- This build is not publisher-code-signed; Windows may display an unknown-publisher warning. Apply code signing as part of a public release process.
+
+Build setup and the portable ZIP with `build-release.ps1 -IsccPath "C:\path\ISCC.exe"` using Inno Setup 6.7.3. Outputs and SHA-256 checksums are written to `release`. The bundled NAudio 1.10.0 assembly preserves the .NET 4.5.2 baseline and requires no NuGet restore.
 
 ## Quality and file size
 
@@ -73,9 +93,15 @@ Updates use HTTPS and do not upload recordings or change the recording folder an
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-compatibility.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-upgrade.ps1
 python .\tests\verify-video.py .\validation\<timestamp>
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-audio.ps1
+python .\tests\verify-audio-output.py .\validation\audio-<timestamp>
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build-release.ps1 -TestInstaller
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify-installer.ps1
 ```
 
 The video verification script needs Pillow and NumPy. Normal users do not need these development dependencies. Validation covers high-DPI full-screen capture, custom-area coordinates, UI hide and restore, floating controls, capture exclusion, pause timing, stop and save, lossless pixel equality, and odd-sized frame encoding.
+
+Audio checks cover synthetic mixed tones, resampling, silence, pause boundaries, AAC output, duration, unchanged compressed video, and missing-device cleanup. This test environment has no available playback or microphone endpoint: physical audio-device acceptance and Windows 7/8/8.1/11 audio runtime checks remain outstanding. An isolated installer identity was used to verify install, upgrade, launch, running-app protection, uninstall, and preservation of user files.
 
 ## License and third-party components
 

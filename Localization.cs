@@ -81,6 +81,21 @@ namespace FreeWindowsScreenRecorder
         private static Dictionary<string, string[]> BuildTranslations()
         {
             Dictionary<string, string[]> map = new Dictionary<string, string[]>(StringComparer.Ordinal);
+            Add(map, "Audio", "錄製聲音", "Audio", "音声", "오디오", "Audio", "Audio", "Audio", "Áudio", "Звук");
+            Add(map, "No audio", "靜音（僅畫面）", "No audio", "音声なし", "소리 없음", "Ohne Ton", "Sans audio", "Sin audio", "Sem áudio", "Без звука");
+            Add(map, "System audio", "電腦聲音", "System audio", "システム音声", "시스템 소리", "Systemton", "Son du PC", "Audio del PC", "Áudio do PC", "Звук системы");
+            Add(map, "Microphone", "麥克風", "Microphone", "マイク", "마이크", "Mikrofon", "Microphone", "Micrófono", "Microfone", "Микрофон");
+            Add(map, "System + mic", "電腦聲音 + 麥克風", "System + mic", "システム + マイク", "시스템 + 마이크", "System + Mikrofon", "PC + micro", "PC + micrófono", "PC + microfone", "Система + микрофон");
+            Add(map, "Audio recording failed. Check Windows default playback/microphone devices and microphone permissions, or choose No audio and retry.",
+                "聲音錄製失敗。請檢查 Windows 預設播放裝置、預設麥克風和麥克風隱私權限，或選擇靜音後重試。",
+                "Audio recording failed. Check Windows default playback/microphone devices and microphone permissions, or choose No audio and retry.",
+                "音声を録音できません。Windows の既定の再生・マイクデバイスとマイクのアクセス許可を確認するか、「音声なし」で再試行してください。",
+                "오디오를 녹음할 수 없습니다. Windows 기본 재생·마이크 장치와 마이크 권한을 확인하거나 소리 없음으로 다시 시도하세요.",
+                "Audioaufnahme fehlgeschlagen. Prüfen Sie die Windows-Standardgeräte und Mikrofonberechtigungen oder wählen Sie Ohne Ton.",
+                "Échec audio. Vérifiez les périphériques Windows par défaut et l’accès au microphone, ou choisissez Sans audio.",
+                "Error de audio. Comprueba los dispositivos predeterminados y los permisos del micrófono en Windows, o elige Sin audio.",
+                "Falha no áudio. Verifique os dispositivos padrão e as permissões do microfone no Windows, ou escolha Sem áudio.",
+                "Ошибка записи звука. Проверьте устройства Windows по умолчанию и доступ к микрофону или выберите «Без звука».");
             Add(map, "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder", "CatEye Screen Recorder");
             Add(map, "Free, lightweight and watermark-free. Open and record.", "免費、輕量、無浮水印。開啟即可錄製。", "Free, lightweight and watermark-free. Open and record.", "無料・軽量・透かしなし。開くだけで録画できます。", "무료·가벼움·워터마크 없음. 열고 바로 녹화하세요.", "Kostenlos, leicht und ohne Wasserzeichen. Öffnen und aufnehmen.", "Gratuit, léger et sans filigrane. Ouvrez et enregistrez.", "Gratis, ligero y sin marca de agua. Abre y graba.", "Grátis, leve e sem marca d’água. Abra e grave.", "Бесплатно, легко и без водяных знаков. Откройте и записывайте.");
             Add(map, "Recording workspace", "錄製工作台", "Recording workspace", "録画ワークスペース", "녹화 작업 공간", "Aufnahme-Arbeitsbereich", "Espace d’enregistrement", "Espacio de grabación", "Área de gravação", "Рабочая область записи");
