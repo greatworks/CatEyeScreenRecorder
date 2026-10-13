@@ -1,5 +1,7 @@
 # CatEye Screen Recorder 2.3.1
 
+[![Total GitHub Releases downloads](https://img.shields.io/github/downloads/greatworks/CatEyeScreenRecorder/total?logo=github&label=Downloads&color=4dd4b0)](https://github.com/greatworks/CatEyeScreenRecorder/releases "Cumulative asset downloads across all releases; not installations. Counts are cached.")
+
 [中文说明](README.md)
 
 A watermark-free, lightweight and completely free Windows screen recorder. Open it and start recording.

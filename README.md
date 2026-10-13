@@ -1,5 +1,7 @@
 # 猫眼录屏 · CatEye Screen Recorder 2.3.1
 
+[![GitHub Releases 累计下载量](https://img.shields.io/github/downloads/greatworks/CatEyeScreenRecorder/total?logo=github&label=%E4%B8%8B%E8%BD%BD%E9%87%8F&color=4dd4b0)](https://github.com/greatworks/CatEyeScreenRecorder/releases "所有版本发布附件的累计下载次数；非安装人数，数据有缓存延迟")
+
 [English README](README.en.md)
 
 一款无水印、轻量、完全免费的 Windows 录屏工具，打开就能录。
