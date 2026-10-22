@@ -12,6 +12,9 @@
 
 适用场景：网课录制、游戏片段录制、会议记录、教程制作、日常屏幕记录。
 
+<img width="1840" height="1240" alt="17920397719038" src="https://github.com/user-attachments/assets/aa6f9358-f7e9-4fbd-b15b-1cc3485df3d6" />
+
+
 ## 开始使用
 
 1. 推荐双击 `CatEyeScreenRecorder-Setup-v2.3.1-Windows-x64.exe` 完成安装，再从开始菜单或桌面打开。便携版完整解压后双击 `CatEyeScreenRecorder.exe`，或运行 `run.bat`。点击右上角语言按钮可选择简体中文、繁體中文、English、日本語、한국어、Deutsch、Français、Español、Português 或 Русский。
