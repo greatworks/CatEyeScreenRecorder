@@ -12,7 +12,8 @@
 
 适用场景：网课录制、游戏片段录制、会议记录、教程制作、日常屏幕记录。
 
-<img width="1840" height="1240" alt="17920397719038" src="https://github.com/user-attachments/assets/aa6f9358-f7e9-4fbd-b15b-1cc3485df3d6" />
+
+<img width="1840" height="1240" alt="CN_1792644258855" src="https://github.com/user-attachments/assets/89e0823a-f457-42b7-a93b-102046709d90" />
 
 
 ## 开始使用
