@@ -6,6 +6,8 @@
 
 A watermark-free, lightweight and completely free Windows screen recorder. Open it and start recording.
 
+<img width="1840" height="1240" alt="17920397719038" src="https://github.com/user-attachments/assets/aa6f9358-f7e9-4fbd-b15b-1cc3485df3d6" />
+
 ## Overview
 
 CatEye Screen Recorder is designed for simple, local screen recording on Windows. It keeps the workflow short: choose the screen or a rectangular area, select quality and frame rate, and start recording. The recorder does not add a watermark and does not require an online account.
